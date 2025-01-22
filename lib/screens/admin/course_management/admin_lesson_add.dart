@@ -29,14 +29,8 @@ class AdminModuleLessonsScreen extends StatefulWidget {
 
 class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
   bool isLoading = true;
-  bool isCreatingAssignment = false;
-  String? error;
 
-  final TextEditingController assignmentTitleController =
-      TextEditingController();
-  final TextEditingController assignmentDescriptionController =
-      TextEditingController();
-  final TextEditingController dueDateController = TextEditingController();
+  String? error;
 
   @override
   void initState() {
@@ -45,12 +39,19 @@ class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
     _loadAssignments();
   }
 
-  @override
-  void dispose() {
-    assignmentTitleController.dispose();
-    assignmentDescriptionController.dispose();
-    dueDateController.dispose();
-    super.dispose();
+  Future<void> _showCreateAssignmentDialog() async {
+    final result = await showDialog(
+      context: context,
+      builder: (context) => _CreateAssignmentDialog(
+        moduleId: widget.moduleId,
+        courseId: widget.courseId,
+      ),
+    );
+
+    if (result == true) {
+      // Refresh assignments if creation was successful
+      _loadAssignments();
+    }
   }
 
   Future<void> _loadAssignments() async {
@@ -73,263 +74,183 @@ class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
     }
   }
 
-  Future<void> _createAssignment() async {
-    if (assignmentTitleController.text.isEmpty ||
-        assignmentDescriptionController.text.isEmpty ||
-        dueDateController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all required fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+  void _showEditAssignmentDialog(BuildContext context, AssignmentModel assignment) {
+  final TextEditingController editAssignmentTitleController =
+      TextEditingController(text: assignment.title);
+  final TextEditingController editAssignmentDescriptionController =
+      TextEditingController(text: assignment.description);
+  final TextEditingController editDueDateController = TextEditingController(
+      text: assignment.dueDate.toIso8601String().split('T')[0]);
+  bool isUpdating = false;
 
-    setState(() => isCreatingAssignment = true);
-    try {
-      await Provider.of<AdminAuthProvider>(context, listen: false)
-          .createAssignmentProvider(
-        courseId: widget.courseId,
-        moduleId: widget.moduleId,
-        // Replace with actual batch ID
-        title: assignmentTitleController.text,
-        description: assignmentDescriptionController.text,
-        dueDate: dueDateController.text,
-      );
-
-      assignmentTitleController.clear();
-      assignmentDescriptionController.clear();
-      dueDateController.clear();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Assignment created successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error creating assignment: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() => isCreatingAssignment = false);
-    }
-  }
-
-  void _showEditAssignmentDialog(
-      BuildContext context, AssignmentModel assignment) {
-    final TextEditingController editassignmentTitleController =
-        TextEditingController(text: assignment.title);
-    final TextEditingController editassignmentDescriptionController =
-        TextEditingController(text: assignment.description);
-    final editdueDateController = TextEditingController(
-        text: assignment.dueDate.toIso8601String().split('T')[0]);
-    bool isUpdating = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Row(
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'Edit Assignment',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            contentPadding: const EdgeInsets.all(16),
+            content: SizedBox(
+              width: 600, // Set desired dialog width
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.edit,
-                      size: 24, color: Theme.of(context).primaryColor),
-                  SizedBox(width: 8),
-                  Text('Edit assignment',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      )),
+                  const Divider(),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: editAssignmentTitleController,
+                    decoration: InputDecoration(
+                      labelText: 'Assignment Title*',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: editAssignmentDescriptionController,
+                    decoration: InputDecoration(
+                      labelText: 'Assignment Content*',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    maxLines: 4,
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: editDueDateController,
+                    decoration: InputDecoration(
+                      labelText: 'Due Date (optional)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              content: SingleChildScrollView(
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'assignment Title*',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[700],
-                        ),
+            ),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: isUpdating
+                          ? null
+                          : () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.grey[200],
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      SizedBox(height: 8),
-                      TextField(
-                        controller: editassignmentTitleController,
-                        decoration: InputDecoration(
-                          hintText: 'Enter assignment title',
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 16),
-                        ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.red),
                       ),
-                      SizedBox(height: 16),
-                      Text(
-                        'assignment Content*',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      TextField(
-                        controller: editassignmentDescriptionController,
-                        decoration: InputDecoration(
-                          hintText: 'Enter assignment content',
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          contentPadding: EdgeInsets.all(12),
-                        ),
-                        maxLines: 4,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Due Date*',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      TextField(
-                        controller: editdueDateController,
-                        decoration: InputDecoration(
-                          hintText: 'Enter due date (optional)',
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          contentPadding: EdgeInsets.all(12),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isUpdating
-                      ? null
-                      : () {
-                          Navigator.of(context).pop();
-                        },
-                  child: Text('Cancel',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                      )),
-                ),
-                ElevatedButton(
-                  onPressed: isUpdating
-                      ? null
-                      : () async {
-                          if (editassignmentTitleController.text
-                                  .trim()
-                                  .isEmpty ||
-                              editassignmentDescriptionController.text
-                                  .trim()
-                                  .isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text('Please fill all required fields'),
-                                backgroundColor: Colors.red,
-                                behavior: SnackBarBehavior.floating,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: isUpdating
+                          ? null
+                          : () async {
+                              if (editAssignmentTitleController.text
+                                      .trim()
+                                      .isEmpty ||
+                                  editAssignmentDescriptionController.text
+                                      .trim()
+                                      .isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text('Please fill all required fields'),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setState(() {
+                                isUpdating = true;
+                              });
+
+                              try {
+                                final provider = Provider.of<AdminAuthProvider>(
+                                    context,
+                                    listen: false);
+
+                                await provider.SuperAdminUpdateAssignment(
+                                  widget.courseId,
+                                  editAssignmentTitleController.text.trim(),
+                                  editAssignmentDescriptionController.text
+                                      .trim(),
+                                  assignment.assignmentId,
+                                  widget.moduleId,
+                                );
+
+                                Navigator.of(context).pop();
+
+                                // Refresh assignments
+                                await _loadAssignments();
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text('Assignment updated successfully!'),  
+                                  ),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Error updating assignment: ${e.toString()}'),
+                                  ),
+                                );
+                              } finally {
+                                setState(() {
+                                  isUpdating = false;
+                                });
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.lightBlue,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: isUpdating
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white),
                               ),
-                            );
-                            return;
-                          }
-
-                          setState(() {
-                            isUpdating = true;
-                          });
-
-                          try {
-                            final provider = Provider.of<AdminAuthProvider>(
-                                context,
-                                listen: false);
-
-                            // Changed function name from SuperAdminUpdatelesson to SuperAdminUpdateAssignment
-                            await provider.SuperAdminUpdateAssignment(
-                              widget.courseId,
-                              editassignmentTitleController.text.trim(),
-                              editassignmentDescriptionController.text.trim(),
-                              assignment.assignmentId,
-                              widget.moduleId,
-                            );
-
-                            Navigator.of(context).pop();
-
-                            // Change this to refresh assignments instead of lessons
-                            await _loadAssignments(); // Make sure this function exists
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text('Assignment updated successfully'),
-                                backgroundColor: Colors.green,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'Error updating assignment: ${e.toString()}'),
-                                backgroundColor: Colors.red,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          } finally {
-                            setState(() {
-                              isUpdating = false;
-                            });
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            )
+                          : const Text(
+                              'Update',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                    ),
                   ),
-                  child: isUpdating
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text('Update',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          )),
-                ),
-              ],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                ],
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
 
   void _showEditLessonDialog(BuildContext context, AdminLessonmodel lesson) {
     final TextEditingController editTitleController =
@@ -599,20 +520,40 @@ class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            ElevatedButton(
-                              onPressed: _showCreateLessonDialog,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12, horizontal: 20),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                            Row(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: _showCreateAssignmentDialog,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 20),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Create Assignment',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                                 ),
-                              ),
-                              child: const Text(
-                                'Create Lesson',
-                                style: TextStyle(color: Colors.white),
-                              ),
+                                SizedBox(width: 16),
+                                ElevatedButton(
+                                  onPressed: _showCreateLessonDialog,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 20),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Create Lesson',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -795,164 +736,13 @@ class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
                                 },
                               ),
                         SizedBox(height: 16),
-                        // Assignment section
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.assignment,
-                                        color: Theme.of(context).primaryColor),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Create Assignment',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+ Text(
+                                'Assignments',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                SizedBox(height: 16),
-                                TextField(
-                                  controller: assignmentTitleController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Assignment Title*',
-                                    border: OutlineInputBorder(),
-                                    filled: true,
-                                  ),
-                                ),
-                                SizedBox(height: 16),
-                                TextField(
-                                  controller: assignmentDescriptionController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Assignment Description*',
-                                    border: OutlineInputBorder(),
-                                    filled: true,
-                                  ),
-                                  maxLines: 3,
-                                ),
-                                SizedBox(height: 16),
-                                TextField(
-                                  controller: dueDateController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Due Date*',
-                                    border: OutlineInputBorder(),
-                                    filled: true,
-                                    suffixIcon: Icon(Icons.calendar_today),
-                                  ),
-                                  readOnly: true,
-                                  onTap: () async {
-                                    final DateTime? picked =
-                                        await showDatePicker(
-                                      context: context,
-                                      initialDate: DateTime.now(),
-                                      firstDate: DateTime.now(),
-                                      lastDate: DateTime.now()
-                                          .add(Duration(days: 365)),
-                                    );
-                                    if (picked != null) {
-                                      dueDateController.text = picked
-                                          .toIso8601String()
-                                          .split('T')[0];
-                                    }
-                                  },
-                                ),
-                                SizedBox(height: 16),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: isCreatingAssignment
-                                        ? null
-                                        : () async {
-                                            if (assignmentTitleController
-                                                    .text.isEmpty ||
-                                                assignmentDescriptionController
-                                                    .text.isEmpty ||
-                                                dueDateController
-                                                    .text.isEmpty) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                      'Please fill all required fields'),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                              return;
-                                            }
-
-                                            setState(() =>
-                                                isCreatingAssignment = true);
-                                            try {
-                                              await Provider.of<
-                                                          AdminAuthProvider>(
-                                                      context,
-                                                      listen: false)
-                                                  .createAssignmentProvider(
-                                                courseId: widget.courseId,
-                                                moduleId: widget.moduleId,
-                                                title: assignmentTitleController
-                                                    .text,
-                                                description:
-                                                    assignmentDescriptionController
-                                                        .text,
-                                                dueDate: dueDateController.text,
-                                              );
-
-                                              assignmentTitleController.clear();
-                                              assignmentDescriptionController
-                                                  .clear();
-                                              dueDateController.clear();
-
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                      'Assignment created successfully!'),
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                              );
-
-                                              // Refresh the assignments list
-                                              _loadAssignments();
-                                            } catch (e) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                      'Error creating assignment: $e'),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                            } finally {
-                                              setState(() =>
-                                                  isCreatingAssignment = false);
-                                            }
-                                          },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(12.0),
-                                      child: isCreatingAssignment
-                                          ? SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : Text('Create Assignment'),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 24),
+                              ),                        SizedBox(height: 24),
                         if (isLoading)
                           Center(child: CircularProgressIndicator())
                         else if (error != null)
@@ -999,6 +789,9 @@ class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
                                 );
                               }
 
+                             
+                              
+
                               return ListView.separated(
                                 shrinkWrap: true,
                                 physics: NeverScrollableScrollPhysics(),
@@ -1008,37 +801,77 @@ class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
                                 itemBuilder: (context, index) {
                                   final assignment = assignments[index];
                                   return Card(
-                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      side: const BorderSide(
+                                        color:
+                                            Color.fromARGB(255, 187, 234, 255),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    margin: const EdgeInsets.symmetric(
+                                        vertical: 8, horizontal: 16),
                                     child: ListTile(
-                                      contentPadding: EdgeInsets.all(16),
-                                      leading: CircleAvatar(
-                                        backgroundColor:
-                                            Theme.of(context).primaryColor,
-                                        child: Text(
-                                          '${index + 1}',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ),
-                                      title: Text(
-                                        assignment.title,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      subtitle: Column(
+                                      contentPadding:
+                                          const EdgeInsets.all(16.0),
+                                      title: Row(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          SizedBox(height: 8),
-                                          Text(assignment.description),
-                                          SizedBox(height: 4),
-                                          Text(
-                                            'Due: ${DateFormat('MMM dd, yyyy').format(assignment.dueDate)}',
-                                            style: TextStyle(
-                                              color: Theme.of(context)
-                                                  .primaryColor,
-                                              fontWeight: FontWeight.w500,
+                                          Container(
+                                            alignment: Alignment.center,
+                                            width: 30,
+                                            height: 30,
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.shade200,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Text(
+                                              '${index + 1}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  assignment.title,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 18,
+                                                    color: Colors.black87,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  assignment.description,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.black54,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Due: ${DateFormat('MMM dd, yyyy').format(assignment.dueDate)}',
+                                                  style: TextStyle(
+                                                    color: Theme.of(context)
+                                                        .primaryColor,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ],
@@ -1047,16 +880,17 @@ class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           IconButton(
-                                            icon: Icon(Icons.edit,
-                                                color: Theme.of(context)
-                                                    .primaryColor),
+                                            icon: const Icon(Icons.edit_note,
+                                                color: Colors.black),
                                             onPressed: () =>
                                                 _showEditAssignmentDialog(
                                                     context, assignment),
                                           ),
+                                          const SizedBox(width: 8),
                                           IconButton(
-                                            icon: const Icon(Icons.delete,
-                                                color: Colors.red),
+                                            icon: const Icon(
+                                                Icons.delete_sweep_outlined,
+                                                color: Colors.black),
                                             onPressed: () async {
                                               final confirm =
                                                   await showDialog<bool>(
@@ -1084,14 +918,13 @@ class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
                                                         child: const Text(
                                                             'Delete'),
                                                       ),
-                                                    ],  
+                                                    ],
                                                   );
                                                 },
                                               );
 
                                               if (confirm == true) {
                                                 try {
-                                                  // Show loading indicator
                                                   setState(() {
                                                     isLoading = true;
                                                   });
@@ -1101,10 +934,11 @@ class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
                                                           context,
                                                           listen: false)
                                                       .superadmindeleteassignmentprovider(
-assignment.assignmentId,   widget.courseId,widget.moduleId,
+                                                    assignment.assignmentId,
+                                                    widget.courseId,
+                                                    widget.moduleId,
                                                   );
 
-                                                  // Show success message
                                                   ScaffoldMessenger.of(context)
                                                       .showSnackBar(
                                                     const SnackBar(
@@ -1115,10 +949,8 @@ assignment.assignmentId,   widget.courseId,widget.moduleId,
                                                     ),
                                                   );
 
-                                                  // Refresh the assignments list
                                                   await _loadAssignments();
                                                 } catch (error) {
-                                                  // Show error message
                                                   ScaffoldMessenger.of(context)
                                                       .showSnackBar(
                                                     SnackBar(
@@ -1129,7 +961,6 @@ assignment.assignmentId,   widget.courseId,widget.moduleId,
                                                     ),
                                                   );
                                                 } finally {
-                                                  // Hide loading indicator
                                                   setState(() {
                                                     isLoading = false;
                                                   });
@@ -1364,6 +1195,188 @@ class _CreateLessonDialogState extends State<_CreateLessonDialog> {
             ),
           ],
         )
+      ],
+    );
+  }
+}
+
+class _CreateAssignmentDialog extends StatefulWidget {
+  final int moduleId;
+  final int courseId;
+
+  const _CreateAssignmentDialog({
+    Key? key,
+    required this.moduleId,
+    required this.courseId,
+  }) : super(key: key);
+
+  @override
+  State<_CreateAssignmentDialog> createState() =>
+      _CreateAssignmentDialogState();
+}
+
+class _CreateAssignmentDialogState extends State<_CreateAssignmentDialog> {
+  final TextEditingController assignmentTitleController =
+      TextEditingController();
+  final TextEditingController assignmentDescriptionController =
+      TextEditingController();
+  final TextEditingController dueDateController = TextEditingController();
+  bool isCreatingAssignment = false;
+
+  @override
+  void dispose() {
+    assignmentTitleController.dispose();
+    assignmentDescriptionController.dispose();
+    dueDateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _createAssignment() async {
+    if (assignmentTitleController.text.isEmpty ||
+        assignmentDescriptionController.text.isEmpty ||
+        dueDateController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all required fields')),
+      );
+      return;
+    }
+
+    setState(() => isCreatingAssignment = true);
+    try {
+      await Provider.of<AdminAuthProvider>(context, listen: false)
+          .createAssignmentProvider(
+        courseId: widget.courseId,
+        moduleId: widget.moduleId,
+        title: assignmentTitleController.text.trim(),
+        description: assignmentDescriptionController.text.trim(),
+        dueDate: dueDateController.text.trim(),
+      );
+
+      Navigator.of(context).pop(); // Close the dialog
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Assignment created successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error creating assignment: $e')),
+      );
+    } finally {
+      setState(() => isCreatingAssignment = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: const Text(
+        'Create New Assignment',
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      contentPadding: const EdgeInsets.all(16),
+      content: SizedBox(
+        width: 600, // Set desired dialog width
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Divider(),
+            const SizedBox(height: 20),
+            TextFormField(
+              controller: assignmentTitleController,
+              decoration: InputDecoration(
+                labelText: 'Assignment Title*',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextFormField(
+              controller: assignmentDescriptionController,
+              decoration: InputDecoration(
+                labelText: 'Assignment Description*',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 20),
+            TextFormField(
+              controller: dueDateController,
+              decoration: InputDecoration(
+                labelText: 'Due Date*',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                suffixIcon: Icon(Icons.calendar_today),
+              ),
+              readOnly: true,
+              onTap: () async {
+                final DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) {
+                  dueDateController.text = picked.toIso8601String().split('T')[0];
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        Row(
+          children: [
+            Expanded(
+              child: TextButton(
+                onPressed: isCreatingAssignment
+                    ? null
+                    : () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.grey[200],
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: isCreatingAssignment ? null : _createAssignment,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.lightBlue,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: isCreatingAssignment
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Create',
+                        style: TextStyle(color: Colors.white),
+                      ),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

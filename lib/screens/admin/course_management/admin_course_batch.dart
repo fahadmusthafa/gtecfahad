@@ -27,173 +27,173 @@ class _AdminCourseBatchScreenState extends State<AdminCourseBatchScreen> {
     });
   }
 
-void _showEditModuleDialog(BuildContext context, AdminCourseBatch module) {
-  final TextEditingController editTitleController =
-      TextEditingController(text: module.batchName);
-  bool isUpdating = false;
+  void _showEditModuleDialog(BuildContext context, AdminCourseBatch module) {
+    final TextEditingController editTitleController =
+        TextEditingController(text: module.batchName);
+    bool isUpdating = false;
 
-  showDialog(
-    context: context,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                const Text(
-                  'Edit Batch',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            contentPadding: const EdgeInsets.all(16),
-            content: SizedBox(
-              width: 600, // Set the desired width
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Divider(),
-                    SizedBox(height: 20),
-                    TextFormField(
-                      controller: editTitleController,
-                      decoration: InputDecoration(
-                        labelText: 'Batch Name',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            width: 1,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a batch name';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-            actions: [
-              Row(
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: isUpdating
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      style: TextButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        backgroundColor: Colors.grey[200],
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8), // Space between buttons
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: isUpdating
-                          ? null
-                          : () async {
-                              if (editTitleController.text.trim().isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content:
-                                        Text('Batch name cannot be empty.'),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              setState(() {
-                                isUpdating = true;
-                              });
-
-                              try {
-                                final provider =
-                                    Provider.of<AdminAuthProvider>(context,
-                                        listen: false);
-
-                                await provider.AdminUpdatebatchprovider(
-                                  widget.courseId,
-                                  module.batchId,
-                                  editTitleController.text.trim(),
-                                );
-
-                                Navigator.of(context).pop();
-
-                                await provider.AdminfetchBatchForCourseProvider(
-                                    widget.courseId);
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Batch updated successfully!'),
-                                  ),
-                                );
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        'Error updating batch: ${e.toString()}'),
-                                  ),
-                                );
-                              } finally {
-                                setState(() {
-                                  isUpdating = false;
-                                });
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.lightBlue, // Sky blue color
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: isUpdating
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white),
-                              ),
-                            )
-                          : const Text(
-                              'Update',
-                              style: TextStyle(color: Colors.white),
-                            ),
+                  const Text(
+                    'Edit Batch',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
+              contentPadding: const EdgeInsets.all(16),
+              content: SizedBox(
+                width: 600, // Set the desired width
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Divider(),
+                      SizedBox(height: 20),
+                      TextFormField(
+                        controller: editTitleController,
+                        decoration: InputDecoration(
+                          labelText: 'Batch Name',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              width: 1,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a batch name';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: isUpdating
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          backgroundColor: Colors.grey[200],
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8), // Space between buttons
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isUpdating
+                            ? null
+                            : () async {
+                                if (editTitleController.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Batch name cannot be empty.'),
+                                    ),
+                                  );
+                                  return;
+                                }
 
+                                setState(() {
+                                  isUpdating = true;
+                                });
 
+                                try {
+                                  final provider =
+                                      Provider.of<AdminAuthProvider>(context,
+                                          listen: false);
+
+                                  await provider.AdminUpdatebatchprovider(
+                                    widget.courseId,
+                                    module.batchId,
+                                    editTitleController.text.trim(),
+                                  );
+
+                                  Navigator.of(context).pop();
+
+                                  await provider
+                                      .AdminfetchBatchForCourseProvider(
+                                          widget.courseId);
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Batch updated successfully!'),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'Error updating batch: ${e.toString()}'),
+                                    ),
+                                  );
+                                } finally {
+                                  setState(() {
+                                    isUpdating = false;
+                                  });
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.lightBlue, // Sky blue color
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: isUpdating
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Update',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _showCreateBatchDialog(BuildContext context) {
     _batchNameController.clear();
@@ -226,18 +226,17 @@ void _showEditModuleDialog(BuildContext context, AdminCourseBatch module) {
                   )
                 ],
               ),
-              
               contentPadding: const EdgeInsets.all(16),
               content: SizedBox(
                 width: 600, // Set the desired width
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [ 
-                  Divider(),
-                  SizedBox(
-                    height: 20,
-                  ),
+                    children: [
+                      Divider(),
+                      SizedBox(
+                        height: 20,
+                      ),
                       SelectionContainer.disabled(
                         child: TextFormField(
                           controller: _batchNameController,
@@ -378,166 +377,205 @@ void _showEditModuleDialog(BuildContext context, AdminCourseBatch module) {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-      backgroundColor: Colors.blue,  // Set the color of the AppBar
-      title: const Text('Batches', style: TextStyle(color: Colors.white)),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow icon
-        onPressed: () {
-          Navigator.pop(context); // Pop the current screen from the navigation stack
-        },
-      ),
-    ),
-        body: Padding(
-      padding: const EdgeInsets.all(10.0),
-      child: LayoutBuilder(builder: (context, constraints) {
-        return SingleChildScrollView(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(
-              children: [
-                Text(
-                  'BATCHES',
-                  style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 0, 0, 0)),
-                ),
-                Spacer(),
-                ElevatedButton(
-                  child: const Text('Create Batch',
-                      style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () => _showCreateBatchDialog(context),
-                ),
-              ],
-            ),
-            SizedBox(
-              height: 16,
-            ),
-            Divider(),
-            SizedBox(height: 16),
-            Consumer<AdminAuthProvider>(
-              builder: (context, provider, child) {
-                if (provider.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final batches = provider.courseBatches[widget.courseId] ?? [];
-                return SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (batches.isEmpty)
-                          const Text('No batches available.')
-                        else
-                          Wrap(
-  spacing: 8,
-  runSpacing: 16,
-  children: batches.map((batch) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AdminModuleAddScreen(
-              courseId: widget.courseId,
-              batchId: batch.batchId,
-              courseName: 'Course Name',
-            ),
-          ),
-        );
-      },
-      child: Container(
-        width: 225,
-        height: 225,
-        child: Card(
-          elevation: 1,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 150,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
-                  ),
-                  child: Image.asset(
-                    'assets/image.jpg', // Placeholder image
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Container(
-                height: 65,
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      batch.batchName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit_note),
-                          onPressed: () {
-                            _showEditModuleDialog(context, batch);
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_sweep_outlined),
-                          onPressed: () async {
-                            final confirm = await _confirmDelete(context);
-                            if (confirm) {
-                              await _deleteBatch(provider, batch.batchId);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              )
-            ],
+        appBar: AppBar(
+          backgroundColor: Colors.blue, // Set the color of the AppBar
+          title: const Text('Batches', style: TextStyle(color: Colors.white)),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back,
+                color: Colors.white), // Back arrow icon
+            onPressed: () {
+              Navigator.pop(
+                  context); // Pop the current screen from the navigation stack
+            },
           ),
         ),
-      ),
-    );
-  }).toList(),
-)
-
-
-
+        body: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: LayoutBuilder(builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'BATCHES',
+                          style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                        ),
+                        Spacer(),
+                        ElevatedButton(
+                          child: const Text('Create Batch',
+                              style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () => _showCreateBatchDialog(context),
+                        ),
                       ],
                     ),
-                  ),
-                );
-              },
-            ),
-          ]),
-        );
-      }),
-    ));
+                    SizedBox(
+                      height: 16,
+                    ),
+                    Divider(),
+                    SizedBox(height: 16),
+                    Consumer<AdminAuthProvider>(
+                      builder: (context, provider, child) {
+                        if (provider.isLoading) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+
+                        final batches =
+                            provider.courseBatches[widget.courseId] ?? [];
+                        return SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (batches.isEmpty)
+                                  const Text('No batches available.')
+                                else
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 16,
+                                    children: batches.map((batch) {
+                                      return GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  AdminModuleAddScreen(
+                                                courseId: widget.courseId,
+                                                batchId: batch.batchId,
+                                                courseName: 'Course Name',
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: Container(
+                                          width: 225,
+                                          height: 225,
+                                          child: Card(
+                                            elevation: 1,
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                side: BorderSide(
+                                                    color: Colors.blue,
+                                                    width: 1)),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Container(
+                                                  height: 150,
+                                                  child: ClipRRect(
+                                                    borderRadius:
+                                                        const BorderRadius.only(
+                                                      topLeft:
+                                                          Radius.circular(8),
+                                                      topRight:
+                                                          Radius.circular(8),
+                                                    ),
+                                                    child: Image.asset(
+                                                      'assets/batch.jpg', // Placeholder image
+                                                      width: double.infinity,
+                                                      height: double.infinity,
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  ),
+                                                ),
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      const BorderRadius.only(
+                                                    bottomLeft:
+                                                        Radius.circular(12.0),
+                                                    bottomRight:
+                                                        Radius.circular(12.0),
+                                                  ),
+                                                  child: Container(
+                                                    color: Colors.blue[50],
+                                                    height: 65,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 8.0),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          batch.batchName,
+                                                          style:
+                                                              const TextStyle(
+                                                            fontSize: 14,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                        Spacer(),
+                                                        Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .end,
+                                                          children: [
+                                                            IconButton(
+                                                              icon: const Icon(
+                                                                  Icons
+                                                                      .edit_note),
+                                                              onPressed: () {
+                                                                _showEditModuleDialog(
+                                                                    context,
+                                                                    batch);
+                                                              },
+                                                            ),
+                                                            IconButton(
+                                                              icon: const Icon(Icons
+                                                                  .delete_sweep_outlined),
+                                                              onPressed:
+                                                                  () async {
+                                                                final confirm =
+                                                                    await _confirmDelete(
+                                                                        context);
+                                                                if (confirm) {
+                                                                  await _deleteBatch(
+                                                                      provider,
+                                                                      batch
+                                                                          .batchId);
+                                                                }
+                                                              },
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                )
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  )
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ]),
+            );
+          }),
+        ));
   }
 
   Future<void> _deleteBatch(AdminAuthProvider provider, int batchId) async {

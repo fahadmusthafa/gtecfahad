@@ -14,171 +14,171 @@ class AdminAddCourse extends StatefulWidget {
 class _AdminAddCourseState extends State<AdminAddCourse> {
   int? selectedCourseId;
 
-void _showAddCourseDialog(
-  BuildContext context, {
-  String? initialName,
-  String? initialDescription,
-  int? courseId,
-}) {
-  final TextEditingController _nameController =
-      TextEditingController(text: initialName);
-  final TextEditingController _descriptionController =
-      TextEditingController(text: initialDescription);
+  void _showAddCourseDialog(
+    BuildContext context, {
+    String? initialName,
+    String? initialDescription,
+    int? courseId,
+  }) {
+    final TextEditingController _nameController =
+        TextEditingController(text: initialName);
+    final TextEditingController _descriptionController =
+        TextEditingController(text: initialDescription);
 
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text(
-          courseId == null ? 'Add Course' : 'Edit Course',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        contentPadding: const EdgeInsets.all(16),
-        content: SizedBox(
-          width: 600, // Set the desired width
-          child: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SelectionContainer.disabled( // Disable text selection highlighting
-                    child: TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Course Name',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            width: 1, // Reduced border width
-                            color: Colors.grey,
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            courseId == null ? 'Add Course' : 'Edit Course',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          contentPadding: const EdgeInsets.all(16),
+          content: SizedBox(
+            width: 600, // Set the desired width
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SelectionContainer.disabled(
+                      // Disable text selection highlighting
+                      child: TextFormField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: 'Course Name',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              width: 1, // Reduced border width
+                              color: Colors.grey,
+                            ),
                           ),
                         ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a course name';
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a course name';
-                        }
-                        return null;
-                      },
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  SelectionContainer.disabled( // Disable text selection highlighting
-                    child: TextFormField(
-                      controller: _descriptionController,
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            width: 1, // Reduced border width
-                            color: Colors.grey,
+                    const SizedBox(height: 16),
+                    SelectionContainer.disabled(
+                      // Disable text selection highlighting
+                      child: TextFormField(
+                        controller: _descriptionController,
+                        decoration: InputDecoration(
+                          labelText: 'Description',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              width: 1, // Reduced border width
+                              color: Colors.grey,
+                            ),
                           ),
                         ),
+                        maxLines: 3,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a description';
+                          }
+                          return null;
+                        },
                       ),
-                      maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a description';
-                        }
-                        return null;
-                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Colors.grey[200],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    backgroundColor: Colors.grey[200],
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.red),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.red),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8), // Space between buttons
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      String courseName = _nameController.text.trim();
-                      String courseDescription =
-                          _descriptionController.text.trim();
+                const SizedBox(width: 8), // Space between buttons
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        String courseName = _nameController.text.trim();
+                        String courseDescription =
+                            _descriptionController.text.trim();
 
-                      try {
-                        final provider = Provider.of<AdminAuthProvider>(
-                            context,
-                            listen: false);
+                        try {
+                          final provider = Provider.of<AdminAuthProvider>(
+                              context,
+                              listen: false);
 
-                        if (courseId == null) {
-                          await provider.AdmincreateCourseprovider(
-                              courseName, courseDescription);
+                          if (courseId == null) {
+                            await provider.AdmincreateCourseprovider(
+                                courseName, courseDescription);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Course added successfully!')),
+                            );
+                          } else {
+                            await provider.AdminupdateCourse(
+                                courseId, courseName, courseDescription);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('Course updated successfully!')),
+                            );
+                          }
+
+                          await provider.AdminfetchCoursesprovider();
+                          Navigator.of(context).pop();
+                        } catch (error) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Course added successfully!')),
-                          );
-                        } else {
-                          await provider.AdminupdateCourse(
-                              courseId, courseName, courseDescription);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text('Course updated successfully!')),
+                            SnackBar(
+                                content: Text('Failed to save course: $error')),
                           );
                         }
-
-                        await provider.AdminfetchCoursesprovider();
-                        Navigator.of(context).pop();
-                      } catch (error) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text('Failed to save course: $error')),
-                        );
                       }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.lightBlue, // Sky blue color
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.lightBlue, // Sky blue color
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text(
-                    'Save',
-                    style: TextStyle(
-                        color: Colors.white), // White text for contrast
+                    child: const Text(
+                      'Save',
+                      style: TextStyle(
+                          color: Colors.white), // White text for contrast
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      );
-    },
-  );
-}
-
-
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +193,7 @@ void _showAddCourseDialog(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                 Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
@@ -254,8 +254,9 @@ void _showAddCourseDialog(
                               child: Card(
                                   elevation: 1,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
+                                      borderRadius: BorderRadius.circular(8),
+                                      side: BorderSide(
+                                          color: Colors.blue, width: 1)),
                                   child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -269,126 +270,135 @@ void _showAddCourseDialog(
                                               topRight: Radius.circular(8),
                                             ),
                                             child: Image.asset(
-                                              'assets/image.jpg', // Placeholder image
+                                              'assets/course.jpg', // Placeholder image
                                               width: double.infinity,
                                               height: double.infinity,
                                               fit: BoxFit.cover,
                                             ),
                                           ),
                                         ),
-                                        Container(
-                                          height: 65,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8.0),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                course.name,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.bold,
+                                        ClipRRect(
+                                          borderRadius: const BorderRadius.only(
+                                            bottomLeft: Radius.circular(12.0),
+                                            bottomRight: Radius.circular(12.0),
+                                          ),
+                                          child: Container(
+                                            height: 65,
+                                            color: Colors.blue[50],
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  course.name,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
-                                              ),
-                                              Spacer(),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.end,
-                                                children: [
-                                                  IconButton(
-                                                    icon: const Icon(
-                                                        Icons.edit_note),
-                                                    onPressed: () {
-                                                      _showAddCourseDialog(
-                                                        context,
-                                                        initialName:
-                                                            course.name,
-                                                        initialDescription:
-                                                            course.description,
-                                                        courseId:
-                                                            course.courseId,
-                                                      );
-                                                    },
-                                                  ),
-                                                  IconButton(
-                                                    icon: const Icon(
-                                                      Icons
-                                                          .delete_sweep_outlined,
+                                                Spacer(),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                          Icons.edit_note),
+                                                      onPressed: () {
+                                                        _showAddCourseDialog(
+                                                          context,
+                                                          initialName:
+                                                              course.name,
+                                                          initialDescription:
+                                                              course
+                                                                  .description,
+                                                          courseId:
+                                                              course.courseId,
+                                                        );
+                                                      },
                                                     ),
-                                                    onPressed: () async {
-                                                      final confirm =
-                                                          await showDialog<
-                                                              bool>(
-                                                        context: context,
-                                                        builder: (context) {
-                                                          return AlertDialog(
-                                                            shape:
-                                                                RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8),
-                                                            ),
-                                                            title: const Text(
-                                                                'Delete Course'),
-                                                            content: const Text(
-                                                                'Are you sure you want to delete this course?'),
-                                                            actions: [
-                                                              TextButton(
-                                                                onPressed: () =>
-                                                                    Navigator.of(
-                                                                            context)
-                                                                        .pop(
-                                                                            false),
-                                                                child: const Text(
-                                                                    'Cancel'),
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons
+                                                            .delete_sweep_outlined,
+                                                      ),
+                                                      onPressed: () async {
+                                                        final confirm =
+                                                            await showDialog<
+                                                                bool>(
+                                                          context: context,
+                                                          builder: (context) {
+                                                            return AlertDialog(
+                                                              shape:
+                                                                  RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            8),
                                                               ),
-                                                              TextButton(
-                                                                onPressed: () =>
-                                                                    Navigator.of(
-                                                                            context)
-                                                                        .pop(
-                                                                            true),
-                                                                child: const Text(
-                                                                    'Delete'),
-                                                              ),
-                                                            ],
-                                                          );
-                                                        },
-                                                      );
+                                                              title: const Text(
+                                                                  'Delete Course'),
+                                                              content: const Text(
+                                                                  'Are you sure you want to delete this course?'),
+                                                              actions: [
+                                                                TextButton(
+                                                                  onPressed: () =>
+                                                                      Navigator.of(
+                                                                              context)
+                                                                          .pop(
+                                                                              false),
+                                                                  child: const Text(
+                                                                      'Cancel'),
+                                                                ),
+                                                                TextButton(
+                                                                  onPressed: () =>
+                                                                      Navigator.of(
+                                                                              context)
+                                                                          .pop(
+                                                                              true),
+                                                                  child: const Text(
+                                                                      'Delete'),
+                                                                ),
+                                                              ],
+                                                            );
+                                                          },
+                                                        );
 
-                                                      if (confirm == true) {
-                                                        try {
-                                                          await Provider.of<
-                                                                      AdminAuthProvider>(
-                                                                  context,
-                                                                  listen: false)
-                                                              .AdmindeleteCourseprovider(
-                                                                  course
-                                                                      .courseId);
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            const SnackBar(
-                                                                content: Text(
-                                                                    'Course deleted successfully!')),
-                                                          );
-                                                        } catch (error) {
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            SnackBar(
-                                                                content: Text(
-                                                                    'Failed to delete course: $error')),
-                                                          );
+                                                        if (confirm == true) {
+                                                          try {
+                                                            await Provider.of<
+                                                                        AdminAuthProvider>(
+                                                                    context,
+                                                                    listen:
+                                                                        false)
+                                                                .AdmindeleteCourseprovider(
+                                                                    course
+                                                                        .courseId);
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                              const SnackBar(
+                                                                  content: Text(
+                                                                      'Course deleted successfully!')),
+                                                            );
+                                                          } catch (error) {
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                              SnackBar(
+                                                                  content: Text(
+                                                                      'Failed to delete course: $error')),
+                                                            );
+                                                          }
                                                         }
-                                                      }
-                                                    },
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
+                                                      },
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         )
                                       ]))));
