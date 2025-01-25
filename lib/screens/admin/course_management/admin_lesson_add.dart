@@ -537,6 +537,31 @@ class _AdminModuleLessonsScreenState extends State<AdminModuleLessonsScreen> {
                                     style: TextStyle(color: Colors.white),
                                   ),
                                 ),
+                                 ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => QuizCreatorScreen(
+                                                moduleId: widget.moduleId,
+                                                courseId: widget.courseId,
+                                                batchId: widget.batchId,
+                                              )),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 20),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Create quiz',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
                                 SizedBox(width: 16),
                                 ElevatedButton(
                                   onPressed: _showCreateLessonDialog,

@@ -4,6 +4,10 @@ import 'package:lms/screens/admin/login/admin_login.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint(details.toString());
+  };
   runApp(const MyApp());
 }
 
@@ -18,7 +22,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'GTEC LMS',
         theme: ThemeData(primarySwatch: Colors.blue),
-        home:  AdminLoginScreen(),
+        home: AdminLoginScreen(),
       ),
     );
   }
@@ -30,7 +34,8 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Future.microtask(() {
-      final authProvider = Provider.of<AdminAuthProvider>(context, listen: false);
+      final authProvider =
+          Provider.of<AdminAuthProvider>(context, listen: false);
       authProvider.AdmincheckAuthprovider(context);
     });
 

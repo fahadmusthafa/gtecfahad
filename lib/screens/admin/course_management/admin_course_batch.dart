@@ -443,8 +443,8 @@ class _AdminCourseBatchScreenState extends State<AdminCourseBatchScreen> {
                                   const Text('No batches available.')
                                 else
                                   Wrap(
-                                    spacing: 8,
-                                    runSpacing: 16,
+                                    spacing: 10,
+                                    runSpacing: 10,
                                     children: batches.map((batch) {
                                       return GestureDetector(
                                         onTap: () {

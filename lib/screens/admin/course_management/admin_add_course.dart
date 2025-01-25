@@ -233,8 +233,9 @@ class _AdminAddCourseState extends State<AdminAddCourse> {
                   Divider(),
                   const SizedBox(height: 20),
                   Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
+                    
+                    spacing: 10,
+                    runSpacing: 10,
                     children: courseProvider.course.map((course) {
                       return GestureDetector(
                           onTap: () {
