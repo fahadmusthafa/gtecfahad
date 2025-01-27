@@ -1279,7 +1279,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                   children: [
                     Card(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(8),
                         side: BorderSide(
                           color:
                               Colors.lightBlue, // Set your desired border color
@@ -1324,7 +1324,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                     if (selectedModule != null)
                       Card(
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(8),
                           side: BorderSide(
                             color: Colors
                                 .lightBlue, // Set your desired border color
