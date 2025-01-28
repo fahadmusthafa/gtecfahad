@@ -18,6 +18,12 @@ class AdminAuthProvider with ChangeNotifier {
 
   String? get token => _token;
 
+  BatchStudentModel? _batchData;
+
+  // Getter for the batch data
+  BatchStudentModel? get batchData => _batchData;
+  List<Student> get students => _batchData?.students ?? [];
+
   final SuperAdminAPI _apiService = SuperAdminAPI();
 
   Map<int, List<AdminModulemodel>> _courseModules = {};
@@ -28,7 +34,7 @@ class AdminAuthProvider with ChangeNotifier {
 
   Map<int, List<Quizmodel>> _moduleQuizzes = {};
 
- final Map<int, List<AssignmentModel>> _moduleassignments = {};
+  final Map<int, List<AssignmentModel>> _moduleassignments = {};
 
   List<Quizmodel> getQuizzesForModule(int moduleId) {
     return _moduleQuizzes[moduleId] ?? [];
@@ -42,6 +48,10 @@ class AdminAuthProvider with ChangeNotifier {
       []; // Add this line to define the _users variable
 
   List<AdminAllusersmodel>? get users => _users;
+
+   List<UnapprovedUser> _unapprovedUsers = [];
+  List<UnapprovedUser>? get unapprovedUsers => _unapprovedUsers;
+
 
   final Map<int, List<AdminCourseBatch>> _courseBatches =
       {}; // Map for storing course batches
@@ -63,7 +73,7 @@ class AdminAuthProvider with ChangeNotifier {
     return _moduleLessons[moduleId] ?? [];
   }
 
-    List<AssignmentModel> getAssignmentsForModule(int moduleId) {
+  List<AssignmentModel> getAssignmentsForModule(int moduleId) {
     return _moduleassignments[moduleId] ?? [];
   }
 
@@ -539,25 +549,29 @@ class AdminAuthProvider with ChangeNotifier {
   }
 
   Future<void> adminApproveUserprovider({
-    required String role,
     required int userId,
+    required String role,
+    required String action, // 'approve' or 'reject'
   }) async {
     if (_token == null) throw Exception('Token is missing');
 
     try {
       final isSuccess = await _apiService.adminApproveUser(
         token: _token!,
-        role: role,
         userId: userId,
+        role: role,
+        action: action,
       );
 
       if (isSuccess) {
-        print('User successfully assigned to batch.');
-        notifyListeners(); // Notify listeners if needed
+        print('User successfully ${action}ed.');
+        notifyListeners();
       }
     } catch (e) {
-      print('Error assigning user to batch: $e');
+      print('Error processing user approval/rejection: $e');
+      rethrow; // Rethrow to handle in UI
     }
+    await AdminfetchallusersProvider();
   }
 
   Future<void> AdminUploadlessonprovider(int courseId, int batchId,
@@ -706,84 +720,6 @@ class AdminAuthProvider with ChangeNotifier {
     }
   }
 
-  Future<List<Quizmodel>> fetchQuizzes({
-    required int courseId,
-    required int moduleId,
-  }) async {
-    if (_token == null) throw Exception('Token is missing');
-
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      final response = await _apiService.get(
-        '/admin/viewQuiz/$courseId/$moduleId',
-        headers: {
-          'Authorization': 'Bearer $_token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        // Check if the response contains a data field with the quiz list
-        final List<dynamic> quizList = responseData['data'] ?? [];
-        _quizzes = quizList.map((json) => Quizmodel.fromJson(json)).toList();
-
-        notifyListeners();
-        return _quizzes;
-      } else {
-        throw Exception('Failed to load quizzes: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching quizzes: $e');
-      throw Exception('Failed to fetch quizzes: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> updateQuizProvider({
-    required int quizId,
-    required int courseId,
-    required int moduleId,
-    required String name,
-    required String description,
-    required List<Map<String, dynamic>> questions,
-  }) async {
-    if (_token == null) throw Exception('Token is missing');
-
-    try {
-      print('Updating quiz with following data:');
-      print('Quiz ID: $quizId');
-      print('Course ID: $courseId');
-      print('Module ID: $moduleId');
-      print('Name: $name');
-      print('Description: $description');
-      print('Number of questions: ${questions.length}');
-
-      await _apiService.updateQuizAPI(
-        token: _token!,
-        quizId: quizId,
-        courseId: courseId,
-        moduleId: moduleId,
-        data: {
-          'name': name,
-          'description': description,
-          'questions': questions,
-        },
-      );
-
-      notifyListeners();
-    } catch (e) {
-      print('Error in updateQuizProvider: $e');
-      throw Exception('Failed to update quiz: $e');
-    }
-  }
-
-  List<Quizmodel> get quizzes => _quizzes;
-
   Future<void> createAssignmentProvider({
     required int courseId,
     required int moduleId,
@@ -811,17 +747,15 @@ class AdminAuthProvider with ChangeNotifier {
     await fetchAssignmentForModuleProvider(courseId, moduleId);
   }
 
-  Future<void> fetchAssignmentForModuleProvider(int courseId, int moduleId) async {
+  Future<void> fetchAssignmentForModuleProvider(
+      int courseId, int moduleId) async {
     if (_token == null) throw Exception('Token is missing');
-    
+
     try {
       print('Fetching assignments for Course: $courseId, Module: $moduleId');
       final assignments = await _apiService.fetchAssignmentForModuleAPI(
-        _token!,
-        courseId,
-        moduleId
-      );
-      
+          _token!, courseId, moduleId);
+
       _moduleassignments[moduleId] = assignments;
       print('Fetched ${assignments.length} assignments');
       notifyListeners();
@@ -831,18 +765,18 @@ class AdminAuthProvider with ChangeNotifier {
       rethrow;
     }
   }
-  
-
 
   Future<void> superadmindeleteassignmentprovider(
-      int courseId, int moduleId, int assignmentId,) async {
+    int courseId,
+    int moduleId,
+    int assignmentId,
+  ) async {
     if (_token == null) throw Exception('Token is missing');
 
     try {
       // Call the API to delete the assignment
       final result = await _apiService.deletesuperAdminAssignmntAPI(
-_token!,courseId,moduleId,assignmentId
-      );
+          _token!, courseId, moduleId, assignmentId);
       print(result);
 
       // Update the local state
@@ -856,7 +790,6 @@ _token!,courseId,moduleId,assignmentId
       throw Exception('Failed to delete Assignment');
     }
   }
-  
 
   Future<void> SuperAdminUpdateAssignment(int courseId, String title,
       String description, int assignmentId, int moduleId) async {
@@ -880,6 +813,43 @@ _token!,courseId,moduleId,assignmentId
     } catch (e) {
       print('Error updating assignment: $e');
       throw Exception('Failed to update assignment: $e');
+    }
+  }
+
+  Future<void> AdminfetchallusersBatchProvider(
+      int courseId, int batchId) async {
+    if (_token == null) throw Exception('Token is missing');
+
+    try {
+      final response = await _apiService.AdminfetchUsersBatchAPI(
+        _token!,
+        courseId,
+        batchId,
+      );
+
+      _batchData = response as BatchStudentModel?;
+      print('Fetched batch data: $_batchData');
+      print('Number of students: ${_batchData?.students.length}');
+
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching users: $e');
+      rethrow;
+    }
+  }
+
+   Future<void> AdminfetchUnApprovedusersProvider() async {
+    if (_token == null) throw Exception('Token is missing');
+    try {
+      // Update the list with fetched data
+      _unapprovedUsers = await _apiService.AdminfetchUnApprovedUsersAPI(_token!);
+      print('Fetched unapproved users: $_unapprovedUsers');
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching unapproved users: $e');
+      // In case of error, keep the list empty but not null
+      _unapprovedUsers = [];
+      notifyListeners();
     }
   }
 }

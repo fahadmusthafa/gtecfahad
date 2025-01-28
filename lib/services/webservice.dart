@@ -6,7 +6,7 @@ class SuperAdminAPI {
   final String baseUrl = 'https://api.portfoliobuilders.in/api';
 
   Future<http.Response> loginAdminAPI(String email, String password) async {
-    final url = Uri.parse('$baseUrl/login');
+    final url = Uri.parse('$baseUrl/admin/login');
     return await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -175,8 +175,13 @@ class SuperAdminAPI {
     }
   }
 
-  Future<String> AdmincreatemoduleAPI(String token, int courseId, int batchId,
-      String content, String title) async {
+  Future<String> AdmincreatemoduleAPI(
+    String token,
+    int courseId,
+    int batchId,
+    String title,
+    String content,
+  ) async {
     final url = Uri.parse('$baseUrl/admin/createModule');
     final response = await http.post(
       url,
@@ -604,7 +609,8 @@ class SuperAdminAPI {
     required int batchId,
     required int userId,
   }) async {
-    final url = Uri.parse('$baseUrl/admin/deleteUserFromBatch');
+    final url = Uri.parse(
+        '$baseUrl/admin/deleteUserFromBatch/$courseId/$batchId/$userId');
 
     try {
       final response = await http.delete(
@@ -635,38 +641,41 @@ class SuperAdminAPI {
   }
 
   Future<bool> adminApproveUser({
-    required String token,
-    required String role,
-    required int userId,
-  }) async {
-    final url = Uri.parse('$baseUrl/admin/adminApproveUser');
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'role': role,
-          'id': userId,
-        }),
-      );
-
-      print('Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        return true; // Indicates success
-      } else {
-        throw Exception('Failed to Approval User : ${response.body}');
-      }
-    } catch (e) {
-      print('Error: $e');
-      rethrow;
+  required String token,
+  required int userId,
+  required String role,
+  required String action,
+}) async {
+  final url = Uri.parse('$baseUrl/admin/adminApproveUser');
+  
+  try {
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'userId': userId,
+        'role': role,
+        'action': action.toLowerCase(), // Ensure consistent casing
+      }),
+    );
+    
+    print('Status Code: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      final errorMessage = jsonDecode(response.body)['message'] ?? 'Unknown error occurred';
+      throw Exception('Failed to process user: $errorMessage');
     }
+  } catch (e) {
+    print('Error: $e');
+    rethrow;
   }
+}
 
   Future<String> AdminpostLiveLink(
     String token,
@@ -785,70 +794,6 @@ class SuperAdminAPI {
     }
   }
 
-  Future<List<Quizmodel>> fetchQuizzes({
-    required String token,
-    required int courseId,
-    required int moduleId,
-  }) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/admin/viewQuiz/$courseId/$moduleId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      print('API Response: ${response.body}'); // Add this line to debug
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> quizList = responseData['data'] ?? [];
-        return quizList.map((quiz) => Quizmodel.fromJson(quiz)).toList();
-      } else {
-        throw Exception('Failed to fetch quizzes: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching quizzes: $e');
-      throw Exception('Failed to fetch quizzes: $e');
-    }
-  }
-
-  Future<void> updateQuizAPI({
-    required String token,
-    required int quizId,
-    required int courseId,
-    required int moduleId,
-    required Map<String, dynamic> data,
-  }) async {
-    try {
-      print('Updating quiz with data: ${jsonEncode(data)}');
-
-      final url = Uri.parse('$baseUrl/admin/updateQuiz/$quizId');
-      print('Making request to: $url');
-
-      final response = await http.put(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(data),
-      );
-
-      print('Response status code: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode != 200) {
-        throw Exception(
-            'Failed to update quiz. Status: ${response.statusCode}, Body: ${response.body}');
-      }
-    } catch (e) {
-      print('Error updating quiz: $e');
-      throw Exception('Failed to update quiz: $e');
-    }
-  }
-
   Future<void> createAssignmentAPI({
     required String token,
     required int courseId,
@@ -888,14 +833,11 @@ class SuperAdminAPI {
   }
 
   Future<List<AssignmentModel>> fetchAssignmentForModuleAPI(
-    String token, 
-    int courseId, 
-    int moduleId
-  ) async {
+      String token, int courseId, int moduleId) async {
     final url = Uri.parse('$baseUrl/admin/getAssignments/$courseId/$moduleId');
     try {
       print('Fetching assignments from: $url'); // Debug URL
-      
+
       final response = await http.get(
         url,
         headers: {
@@ -903,23 +845,26 @@ class SuperAdminAPI {
           'Authorization': 'Bearer $token',
         },
       );
-      
+
       print('Response status code: ${response.statusCode}');
       print('Response body: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final decodedResponse = jsonDecode(response.body);
         print('Decoded response: $decodedResponse'); // Debug decoded JSON
-        
+
         if (decodedResponse['assignments'] == null) {
           print('No assignments key in response');
           return [];
         }
-        
+
         final List<dynamic> assignments = decodedResponse['assignments'];
-        return assignments.map((item) => AssignmentModel.fromJson(item)).toList();
+        return assignments
+            .map((item) => AssignmentModel.fromJson(item))
+            .toList();
       } else {
-        throw Exception('Failed to fetch assignments: ${response.statusCode}\n${response.body}');
+        throw Exception(
+            'Failed to fetch assignments: ${response.statusCode}\n${response.body}');
       }
     } catch (e, stackTrace) {
       print('Error fetching assignments: $e');
@@ -928,9 +873,10 @@ class SuperAdminAPI {
     }
   }
 
-  Future<String> deletesuperAdminAssignmntAPI( String token,
-      int assignmentId, int courseId, int moduleId) async {
-    final url = Uri.parse("$baseUrl/admin/deleteAssignment/$assignmentId/$courseId/$moduleId");
+  Future<String> deletesuperAdminAssignmntAPI(
+      String token, int assignmentId, int courseId, int moduleId) async {
+    final url = Uri.parse(
+        "$baseUrl/admin/deleteAssignment/$assignmentId/$courseId/$moduleId");
     try {
       final response = await http.delete(
         url,
@@ -990,4 +936,64 @@ class SuperAdminAPI {
       rethrow;
     }
   }
+
+  Future<BatchStudentModel> AdminfetchUsersBatchAPI(
+    String token,
+    int courseId,
+    int batchId,
+  ) async {
+    final url =
+        Uri.parse('$baseUrl/admin/getStudentsByBatchId/$courseId/$batchId');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return BatchStudentModel.fromJson(data);
+      } else {
+        throw Exception('Failed to fetch users: ${response.body}');
+      }
+    } catch (e) {
+      print('Error: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<UnapprovedUser>> AdminfetchUnApprovedUsersAPI(String token) async {
+  final url = Uri.parse('$baseUrl/admin/getUnapprovedUsers');
+  try {
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    print('Status Code: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      // Changed from 'unapprovedusers' to 'unapprovedUsers' to match API response
+      final List<dynamic> unapprovedUsers = responseData['unapprovedUsers'] ?? [];
+      return unapprovedUsers.map((item) => UnapprovedUser.fromJson(item)).toList();
+    } else {
+      print('Failed to fetch users: ${response.body}');
+      return [];
+    }
+  } catch (e) {
+    print('Error in API call: $e');
+    return [];
+  }
+}
 }

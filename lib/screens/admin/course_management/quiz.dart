@@ -31,28 +31,28 @@ class _QuizCreatorScreenState extends State<QuizCreatorScreen> {
   @override
   void initState() {
     super.initState();
-    _loadQuizzes();
+    // _loadQuizzes();
   }
 
-  Future<void> _loadQuizzes() async {
-    try {
-      final provider = Provider.of<AdminAuthProvider>(context, listen: false);
-      final fetchedQuizzes = await provider.fetchQuizzes(
-        courseId: widget.courseId,
-        moduleId: widget.moduleId,
-      );
+  // Future<void> _loadQuizzes() async {
+  //   try {
+  //     final provider = Provider.of<AdminAuthProvider>(context, listen: false);
+  //     final fetchedQuizzes = await provider.fetchQuizzes(
+  //       courseId: widget.courseId,
+  //       moduleId: widget.moduleId,
+  //     );
 
-      if (mounted) {
-        setState(() {
-          quizzes = fetchedQuizzes;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar('Error loading quizzes: $e');
-      }
-    }
-  }
+  //     if (mounted) {
+  //       setState(() {
+  //         quizzes = fetchedQuizzes;
+  //       });
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       _showErrorSnackBar('Error loading quizzes: $e');
+  //     }
+  //   }
+  // }
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
@@ -198,7 +198,7 @@ class _QuizCreatorScreenState extends State<QuizCreatorScreen> {
         });
       }
 
-      await _loadQuizzes();
+      // await _loadQuizzes();
     } catch (e) {
       _showErrorSnackBar('Error creating quiz: $e');
     }

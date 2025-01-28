@@ -67,15 +67,15 @@ class AdminLessonmodel {
 
   factory AdminLessonmodel.fromJson(Map<String, dynamic> json) {
     return AdminLessonmodel(
-      lessonId: int.parse(json['lessonId']?.toString() ?? '0'), 
-      moduleId: int.parse(json['moduleId']?.toString() ?? '0'), 
-      courseId: int.parse(json['courseId']?.toString() ?? '0'), 
-      batchId: int.parse(json['batchId']?.toString() ?? '0'), 
-      title: json['title'] ?? '', 
-      content: json['content'] ?? '', 
-      videoLink: json['videoLink'] ?? '', 
-      pdfPath: json['pdfPath'], 
-      status: json['status'] ?? '', 
+      lessonId: int.parse(json['lessonId']?.toString() ?? '0'),
+      moduleId: int.parse(json['moduleId']?.toString() ?? '0'),
+      courseId: int.parse(json['courseId']?.toString() ?? '0'),
+      batchId: int.parse(json['batchId']?.toString() ?? '0'),
+      title: json['title'] ?? '',
+      content: json['content'] ?? '',
+      videoLink: json['videoLink'] ?? '',
+      pdfPath: json['pdfPath'],
+      status: json['status'] ?? '',
     );
   }
 }
@@ -88,7 +88,6 @@ class AdminCourseBatch {
     required this.batchId,
     required this.batchName,
   });
-
 
   factory AdminCourseBatch.fromJson(Map<String, dynamic> json) {
     return AdminCourseBatch(
@@ -123,6 +122,7 @@ class AdminAllusersmodel {
     );
   }
 }
+
 class AdminLiveLinkResponse {
   final String message;
   final String liveLink;
@@ -133,7 +133,6 @@ class AdminLiveLinkResponse {
     required this.liveLink,
     required this.liveStartTime,
   });
-
 
   factory AdminLiveLinkResponse.fromJson(Map<String, dynamic> json) {
     return AdminLiveLinkResponse(
@@ -167,18 +166,18 @@ class Quizmodel {
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       questions: (json['questions'] as List?)
-          ?.map((q) => QuestionModel.fromJson(q))
-          .toList() ?? [],
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
+              ?.map((q) => QuestionModel.fromJson(q))
+              .toList() ??
+          [],
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
           : null,
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at']) 
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
           : null,
     );
   }
 }
-
 
 class QuestionModel {
   final String text;
@@ -242,10 +241,107 @@ class AssignmentModel {
       moduleId: json['moduleId'] ?? 0,
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      dueDate: json['dueDate'] != null 
-        ? DateTime.parse(json['dueDate']) 
-        : DateTime.now(),
+      dueDate: json['dueDate'] != null
+          ? DateTime.parse(json['dueDate'])
+          : DateTime.now(),
       submissionLink: json['submissionLink'] ?? '',
     );
   }
 }
+
+class BatchStudentModel {
+  final String message;
+  final int courseId;
+  final String courseName;
+  final int batchId;
+  final String batchName;
+  final List<Student> students;
+
+  BatchStudentModel({
+    required this.message,
+    required this.courseId,
+    required this.courseName,
+    required this.batchId,
+    required this.batchName,
+    required this.students,
+  });
+
+  factory BatchStudentModel.fromJson(Map<String, dynamic> json) {
+    return BatchStudentModel(
+      message: json['message'] as String,
+      courseId: json['courseId'] as int,
+      courseName: json['courseName'] as String,
+      batchId: json['batchId'] as int,
+      batchName: json['batchName'] as String,
+      students: (json['students'] as List<dynamic>)
+          .map((student) => Student.fromJson(student as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class Student {
+  final int studentId;
+  final String name;
+  final String email;
+
+  Student({
+    required this.studentId,
+    required this.name,
+    required this.email,
+  });
+
+  factory Student.fromJson(Map<String, dynamic> json) {
+    return Student(
+      studentId: json['studentId'] as int,
+      name: json['name'] as String,
+      email: json['email'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'studentId': studentId,
+      'name': name,
+      'email': email,
+    };
+  }
+}
+
+class UnapprovedUser {
+  final int userId;
+  final String name;
+  final String email;
+  final String role;
+  final String? phoneNumber; // Added optional phone number field
+
+  UnapprovedUser({
+    required this.userId,
+    required this.name,
+    required this.email,
+    required this.role,
+    this.phoneNumber, // Optional field
+  });
+
+  factory UnapprovedUser.fromJson(Map<String, dynamic> json) {
+    return UnapprovedUser(
+      userId: json['userId'],
+      name: json['name'],
+      email: json['email'],
+      role: json['role'],
+      phoneNumber: json['phoneNumber'], // Parse phone number from JSON
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'name': name,
+      'email': email,
+      'role': role,
+      'phoneNumber': phoneNumber,
+    };
+  }
+}
+
+

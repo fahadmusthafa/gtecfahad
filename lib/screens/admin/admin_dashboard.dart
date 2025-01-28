@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lms/screens/admin/course_management/admin_add_course.dart';
 import 'package:lms/screens/admin/course_management/admin_see_allstudent.dart';
-import 'package:lms/screens/admin/course_management/admin_student.dart';
+import 'package:lms/screens/admin/batch_management/admin_addtobatch_course.dart';
 import 'package:lms/screens/admin/widgets/bottom.dart';
 import 'package:lms/screens/admin/widgets/mainmenu.dart';
 import 'package:lms/screens/admin/widgets/searchfiled.dart';
@@ -201,7 +201,7 @@ class ContentArea extends StatelessWidget {
       case 'Students Manager':
         return AdminAddStudent();
         case 'Our Centers':
-        return AllUsersPage();
+        return UsersTabView();
       case 'live':
         return AdminAddCourse();
       case 'Dashboard':
