@@ -143,75 +143,115 @@ class AdminLiveLinkResponse {
   }
 }
 
-class Quizmodel {
-  final int id;
+class AdminQuizModel {
+  final int quizId;
   final String name;
   final String description;
-  final List<QuestionModel> questions;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  final int courseId;
+  final int moduleId;
+  final String status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final List<Question> questions;
 
-  Quizmodel({
-    required this.id,
+  AdminQuizModel({
+    required this.quizId,
     required this.name,
     required this.description,
+    required this.courseId,
+    required this.moduleId,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
     required this.questions,
-    this.createdAt,
-    this.updatedAt,
   });
 
-  factory Quizmodel.fromJson(Map<String, dynamic> json) {
-    return Quizmodel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      questions: (json['questions'] as List?)
-              ?.map((q) => QuestionModel.fromJson(q))
-              .toList() ??
-          [],
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+  factory AdminQuizModel.fromJson(Map<String, dynamic> json) {
+    return AdminQuizModel(
+      quizId: json['quizId'],
+      name: json['name'],
+      description: json['description'],
+      courseId: json['courseId'],
+      moduleId: json['moduleId'],
+      status: json['status'],
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
+      questions: (json['questions'] as List)
+          .map((question) => Question.fromJson(question))
+          .toList(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'quizId': quizId,
+      'name': name,
+      'description': description,
+      'courseId': courseId,
+      'moduleId': moduleId,
+      'status': status,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'questions': questions.map((question) => question.toJson()).toList(),
+    };
   }
 }
 
-class QuestionModel {
+class Question {
+  final int questionId;
   final String text;
-  final List<AnswerModel> answers;
+  final List<Answer> answers;
 
-  QuestionModel({
+  Question({
+    required this.questionId,
     required this.text,
     required this.answers,
   });
 
-  factory QuestionModel.fromJson(Map<String, dynamic> json) {
-    return QuestionModel(
+  factory Question.fromJson(Map<String, dynamic> json) {
+    return Question(
+      questionId: json['questionId'],
       text: json['text'],
       answers: (json['answers'] as List)
-          .map((a) => AnswerModel.fromJson(a))
+          .map((answer) => Answer.fromJson(answer))
           .toList(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'questionId': questionId,
+      'text': text,
+      'answers': answers.map((answer) => answer.toJson()).toList(),
+    };
+  }
 }
 
-class AnswerModel {
+class Answer {
+  final int answerId;
   final String text;
-  final bool isCorrect;
+  final bool? isCorrect; // Make this field nullable
 
-  AnswerModel({
+  Answer({
+    required this.answerId,
     required this.text,
-    required this.isCorrect,
+    this.isCorrect, // Default to null if not provided
   });
 
-  factory AnswerModel.fromJson(Map<String, dynamic> json) {
-    return AnswerModel(
+  factory Answer.fromJson(Map<String, dynamic> json) {
+    return Answer(
+      answerId: json['answerId'],
       text: json['text'],
-      isCorrect: json['isCorrect'],
+      isCorrect: json['isCorrect'], // This can now be null
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'answerId': answerId,
+      'text': text,
+      'isCorrect': isCorrect, // This can be null as well
+    };
   }
 }
 
@@ -344,4 +384,138 @@ class UnapprovedUser {
   }
 }
 
+class UserProfileResponse {
+  final String message;
+  final UserProfile profile;
 
+  UserProfileResponse({required this.message, required this.profile});
+
+  factory UserProfileResponse.fromJson(Map<String, dynamic> json) {
+    return UserProfileResponse(
+      message: json['message'],
+      profile: UserProfile.fromJson(json['profile']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'message': message,
+      'profile': profile.toJson(),
+    };
+  }
+}
+
+class UserProfile {
+  final int userId; // Changed from id to userId to match API response
+  final String name;
+  final String email;
+  final String role;
+  final String phoneNumber;
+
+  UserProfile({
+    required this.userId, // Updated parameter name
+    required this.name,
+    required this.email,
+    required this.role,
+    required this.phoneNumber,
+  });
+
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    return UserProfile(
+      userId: json['userId'], // Updated to match API response
+      name: json['name'],
+      email: json['email'],
+      role: json['role'],
+      phoneNumber: json['phoneNumber'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId, // Updated field name
+      'name': name,
+      'email': email,
+      'role': role,
+      'phoneNumber': phoneNumber,
+    };
+  }
+}
+
+class Submission {
+  final int submissionId;
+  final int assignmentId;
+  final int studentId;
+  final String status;
+  final String content;
+  final DateTime submittedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String studentName;
+  final String studentEmail;
+
+  Submission({
+    required this.submissionId,
+    required this.assignmentId,
+    required this.studentId,
+    required this.status,
+    required this.content,
+    required this.submittedAt,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.studentName,
+    required this.studentEmail,
+  });
+
+  factory Submission.fromJson(Map<String, dynamic> json) {
+    return Submission(
+      submissionId: json['submissionId'] ?? 0,
+      assignmentId: json['assignmentId'] ?? 0,
+      studentId: json['studentId'] ?? 0,
+      status: json['status'] ?? '',
+      content: json['content'] ?? '',
+      submittedAt: DateTime.parse(json['submittedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
+      studentName: json['Student']?['name'] ?? 'Unknown',
+      studentEmail: json['Student']?['email'] ?? 'No email',
+    );
+  }
+}
+
+class QuizSubmission {
+  final int submissionId;
+  final String studentName;
+  final String studentEmail;
+  final int quizId;
+  final String questionText;
+  final String selectedAnswer;
+  final bool isCorrect;
+  final String status;
+  final DateTime submittedAt;
+
+  QuizSubmission({
+    required this.submissionId,
+    required this.studentName,
+    required this.studentEmail,
+    required this.quizId,
+    required this.questionText,
+    required this.selectedAnswer,
+    required this.isCorrect,
+    required this.status,
+    required this.submittedAt,
+  });
+
+  factory QuizSubmission.fromMap(Map<String, dynamic> json) {
+    return QuizSubmission(
+      submissionId: json['submissionId'],
+      studentName: json['student']['name'],
+      studentEmail: json['student']['email'],
+      quizId: json['quizId'],
+      questionText: json['question']['text'],
+      selectedAnswer: json['selectedAnswer']['text'],
+      isCorrect: json['selectedAnswer']['isCorrect'],
+      status: json['status'],
+      submittedAt: DateTime.parse(json['submittedAt']),
+    );
+  }
+}

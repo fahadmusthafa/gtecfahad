@@ -777,6 +777,40 @@ class SuperAdminAPI {
     }
   }
 
+  Future<List<AdminQuizModel>> fetchQuizzes(String token, int courseId, int moduleId) async {
+  final url = Uri.parse('$baseUrl/admin/viewQuiz/$courseId/$moduleId');
+
+  try {
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('Status Code: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+
+    if (response.statusCode == 404) {
+      // Handle 404 (No quizzes found for the module)
+      print('No quizzes found for Course $courseId, Module $moduleId');
+      return [];
+    } else if (response.statusCode == 200) {
+      // Parse the quizzes from the response body
+      final responseBody = json.decode(response.body);
+      final List<dynamic> quizList = responseBody['quizzes'];
+      return quizList.map((item) => AdminQuizModel.fromJson(item)).toList();
+    } else {
+      // Handle unexpected status codes
+      throw Exception('Failed to fetch quizzes: ${response.body}');
+    }
+  } catch (e) {
+    print('Error while fetching quizzes: $e');
+    throw Exception('An error occurred while fetching quizzes');
+  }
+}
+
   Future<http.Response> get(String endpoint,
       {required Map<String, String> headers}) async {
     try {
@@ -996,4 +1030,87 @@ class SuperAdminAPI {
     return [];
   }
 }
+
+Future<UserProfileResponse> fetchUserProfile(String token, int userId) async {
+    final url = Uri.parse('$baseUrl/getProfile/$userId');
+    
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return UserProfileResponse.fromJson(data);
+      } else {
+        throw Exception('Failed to fetch user profile: ${response.body}');
+      }
+    } catch (e) {
+      print('Error in API call: $e');
+      rethrow;
+    }
+  }
+
+
+  Future<List<Submission>> fetchSubmission(int assignmentId, String token) async {
+  final url = Uri.parse('$baseUrl/superadmin/getSubmittedAssignments/$assignmentId');
+  try {
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('Status Code: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      // Extract the submissions array from the response
+      final List<dynamic> submissions = responseData['submissions'];
+      print('Submissions array: $submissions'); // Debug print
+      return submissions.map((item) => Submission.fromJson(item)).toList();
+    } else if (response.statusCode == 404) {
+      return [];
+    } else {
+      throw Exception('Failed to load submissions: ${response.body}');
+    }
+  } catch (e) {
+    print('Error: $e');
+    rethrow;
+  }
+}
+
+Future<List<QuizSubmission>> fetchQuizAnswers(int quizId, String token) async {
+    final url = Uri.parse('$baseUrl/admin/getAnswerquiz/$quizId');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> quizSubmissions = responseData['quizSubmissions'];
+        return quizSubmissions.map((item) => QuizSubmission.fromMap(item)).toList();
+      } else if (response.statusCode == 404) {
+        return [];
+      } else {
+        throw Exception('Failed to load quiz answers: ${response.body}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

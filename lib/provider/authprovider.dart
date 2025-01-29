@@ -10,11 +10,25 @@ class AdminAuthProvider with ChangeNotifier {
   String? deleteMessage;
   bool isLoading = false;
   String? message;
+  int? _currentUserId;
   List<Admincoursemodel> _course = []; // Correctly store courses
 
   int? courseId;
 
+  int? assignmentId;
+  final Map<int, List<Submission>> _submissions = {};
+
+  List<Submission> get submissionsForAssignment =>
+      _submissions[assignmentId] ?? [];
+  List<dynamic> getSubmissionsForAssignment(int assignmentId) {
+    return _submissions[assignmentId] ?? [];
+  }
+
   List<Admincoursemodel> get course => _course;
+
+  Map<int, List<QuizSubmission>> _quizsubmissions = {};
+  Map<int, List<QuizSubmission>> get quizsubmissions => _quizsubmissions;
+
 
   String? get token => _token;
 
@@ -24,6 +38,11 @@ class AdminAuthProvider with ChangeNotifier {
   BatchStudentModel? get batchData => _batchData;
   List<Student> get students => _batchData?.students ?? [];
 
+  UserProfileResponse? _userProfile;
+  UserProfileResponse? get userProfile => _userProfile;
+
+  int? get currentUserId => _currentUserId;
+
   final SuperAdminAPI _apiService = SuperAdminAPI();
 
   Map<int, List<AdminModulemodel>> _courseModules = {};
@@ -32,15 +51,17 @@ class AdminAuthProvider with ChangeNotifier {
 
   Map<int, List<AdminLiveLinkResponse>> _livebatch = {};
 
-  Map<int, List<Quizmodel>> _moduleQuizzes = {};
+  Map<int, List<AdminQuizModel>> _moduleQuizzes = {};
 
   final Map<int, List<AssignmentModel>> _moduleassignments = {};
 
-  List<Quizmodel> getQuizzesForModule(int moduleId) {
-    return _moduleQuizzes[moduleId] ?? [];
+  final Map<int, List<AdminQuizModel>> _moduleQuiz = {};
+
+  List<AdminQuizModel> getQuizForModule(int moduleId) {
+    return _moduleQuiz[moduleId] ?? [];
   }
 
-  List<Quizmodel> _quizzes = [];
+  List<AdminQuizModel> _quizzes = [];
 
   bool _isLoading = false;
 
@@ -49,9 +70,8 @@ class AdminAuthProvider with ChangeNotifier {
 
   List<AdminAllusersmodel>? get users => _users;
 
-   List<UnapprovedUser> _unapprovedUsers = [];
+  List<UnapprovedUser> _unapprovedUsers = [];
   List<UnapprovedUser>? get unapprovedUsers => _unapprovedUsers;
-
 
   final Map<int, List<AdminCourseBatch>> _courseBatches =
       {}; // Map for storing course batches
@@ -98,48 +118,38 @@ class AdminAuthProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         _token = responseData['token'];
+        _currentUserId = responseData['userId'];
 
         // Save the token
         await saveToken(_token!);
 
-        // Print token to terminal
-        print('Login Successful! Token: $_token');
+        // Only fetch profile if we have a valid userId
+        if (_currentUserId != null) {
+          await fetchUserProfileProvider(_currentUserId!);
+        }
 
-        // Fetch courses immediately after login
-        await AdminfetchCoursesprovider(); // Fetch courses after login
+        // Rest of your login logic...
+        await AdminfetchCoursesprovider();
+        await AdminfetchUnApprovedusersProvider();
 
-        // Display success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful!')),
         );
 
-        // Navigate to the Dashboard
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
         );
 
         notifyListeners();
-      } else {
-        final errorData = jsonDecode(response.body);
-        String errorMessage = errorData['message'] ?? 'Login failed.';
-
-        // Print the error message
-        print('Login failed: $errorMessage');
-
-        // Show error message in the UI
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
-        throw Exception(errorMessage);
       }
-    } catch (error) {
-      print('Error during login: $error');
+      // Rest of your error handling...
+    } catch (e) {
+      print('Error during login: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('An error occurred. Please check your details.')),
       );
-      throw Exception('An error occurred. Please check your details.');
     }
   }
 
@@ -720,6 +730,33 @@ class AdminAuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> fetchQuizzesForModuleProvider(int courseId, int moduleId) async {
+    if (_token == null) {
+      throw Exception('Token is missing');
+    }
+
+    try {
+      print('Fetching quizzes for Course: $courseId, Module: $moduleId');
+
+      // Fetch quizzes from the API service
+      final quizzes = await _apiService.fetchQuizzes(
+        _token!,
+        courseId,
+        moduleId,
+      );
+
+      // Update the local quiz map
+      _moduleQuiz[moduleId] = quizzes;
+
+      print('Fetched ${quizzes.length} quizzes for Module $moduleId');
+      notifyListeners();
+    } catch (e, stackTrace) {
+      print('Error in provider while fetching quizzes: $e');
+      print('Stack trace: $stackTrace');
+      rethrow; // Rethrow the exception for further handling
+    }
+  }
+
   Future<void> createAssignmentProvider({
     required int courseId,
     required int moduleId,
@@ -838,11 +875,12 @@ class AdminAuthProvider with ChangeNotifier {
     }
   }
 
-   Future<void> AdminfetchUnApprovedusersProvider() async {
+  Future<void> AdminfetchUnApprovedusersProvider() async {
     if (_token == null) throw Exception('Token is missing');
     try {
       // Update the list with fetched data
-      _unapprovedUsers = await _apiService.AdminfetchUnApprovedUsersAPI(_token!);
+      _unapprovedUsers =
+          await _apiService.AdminfetchUnApprovedUsersAPI(_token!);
       print('Fetched unapproved users: $_unapprovedUsers');
       notifyListeners();
     } catch (e) {
@@ -852,4 +890,55 @@ class AdminAuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> fetchUserProfileProvider(int userId) async {
+    if (_token == null) {
+      print('Token is missing');
+      return;
+    }
+
+    try {
+      final response = await _apiService.fetchUserProfile(_token!, userId);
+      _userProfile = response;
+      print('Fetched user profile: ${_userProfile?.profile.name}');
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching user profile: $e');
+      _userProfile = null;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchSubmissions(int assignmentId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final submissions =
+          await _apiService.fetchSubmission(assignmentId, _token!);
+      _submissions[assignmentId] = submissions;
+    } catch (e) {
+      print('Error fetching submissions: $e');
+      _submissions[assignmentId] = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchQuizSubmissions(int quizId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final quizsubmissions = await _apiService.fetchQuizAnswers(quizId, _token!);
+      _quizsubmissions[quizId] = quizsubmissions;
+    } catch (e) {
+      _quizsubmissions[quizId] = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
+

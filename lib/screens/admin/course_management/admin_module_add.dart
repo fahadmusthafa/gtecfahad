@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lms/models/admin_model.dart';
 import 'package:lms/provider/authprovider.dart';
+import 'package:lms/screens/admin/course_management/asignment_submission.dart';
 import 'package:lms/screens/admin/course_management/quiz.dart';
+import 'package:lms/screens/admin/course_management/quiz_submission.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -61,7 +63,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
         .AdminfetchModulesForCourseProvider(widget.courseId, widget.batchId);
   }
 
-  Future<void> _loadLessonsAndAssignments() async {
+ Future<void> _loadLessonsAndAssignmentsquiz() async {
     if (selectedModule != null) {
       final provider = Provider.of<AdminAuthProvider>(context, listen: false);
 
@@ -72,10 +74,18 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
       );
 
       await provider.fetchAssignmentForModuleProvider(
-        selectedModule!.moduleId,
+ 
         widget.courseId,
+               selectedModule!.moduleId,
       );
+         await provider.fetchQuizzesForModuleProvider(
+   
+      widget.courseId,
+         selectedModule!.moduleId,
+    );
     }
+
+ 
   }
 
   void _showEditAssignmentDialog(
@@ -205,7 +215,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                                   Navigator.of(context).pop();
 
                                   // Refresh assignments
-                                  await _loadLessonsAndAssignments();
+                                  await _loadLessonsAndAssignmentsquiz();
 
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -377,7 +387,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
 
                                   Navigator.of(context).pop();
 
-                                  await _loadLessonsAndAssignments();
+                                  await _loadLessonsAndAssignmentsquiz();
 
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -752,7 +762,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                 isExpanded = !isExpanded;
               });
               if (selectedModule != null) {
-                await _loadLessonsAndAssignments();
+                await _loadLessonsAndAssignmentsquiz();
               }
             },
             child: Card(
@@ -809,7 +819,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                         selectedModule = module;
                         isExpanded = false;
                       });
-                      _loadLessonsAndAssignments();
+                      _loadLessonsAndAssignmentsquiz();
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
@@ -978,42 +988,233 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
     }
   }
 
-  Widget _buildLessonsAndAssignmentsView() {
-    if (selectedModule == null) return SizedBox.shrink();
+  Widget _buildLessonsAndAssignmentsquizView() {
+  if (selectedModule == null) return SizedBox.shrink();
 
-    return Consumer<AdminAuthProvider>(
-      builder: (context, provider, child) {
-        final lessons = provider.getLessonsForModule(selectedModule!.moduleId);
-        final assignments =
-            provider.getAssignmentsForModule(selectedModule!.moduleId);
+  return Consumer<AdminAuthProvider>(
+    builder: (context, provider, child) {
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Lessons',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+      final lessons = provider.getLessonsForModule(selectedModule!.moduleId);
+      final assignments = provider.getAssignmentsForModule(selectedModule!.moduleId);
+      final quiz = provider.getQuizForModule(selectedModule!.moduleId); 
+
+      // Print the data to the terminal
+      print('Lessons: $lessons');
+      print('Assignments: $assignments');
+      print('Quiz: $quiz');
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Lessons',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-            _buildLessonsList(lessons),
-            const SizedBox(height: 32),
-            Text(
-              'Assignments',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          const SizedBox(height: 16),
+          _buildLessonsList(lessons),
+          const SizedBox(height: 32),
+          Text(
+            'Assignments',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-            _buildAssignmentsList(assignments),
-          ],
-        );
-      },
+          ),
+          const SizedBox(height: 16),
+          _buildAssignmentsList(assignments),
+          Text(
+            'Quiz',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildQuizList(quiz),
+        ],
+      );
+    },
+  );
+}
+
+Widget _buildQuizList(List<AdminQuizModel> quiz) {
+  if (quiz.isEmpty) {
+    return Center(
+      child: Column(
+        children: [
+          Icon(Icons.quiz, size: 48, color: Colors.grey),
+          SizedBox(height: 8),
+          Text(
+            'No quiz available',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
     );
   }
+
+  return ListView.builder(
+    shrinkWrap: true,
+    physics: NeverScrollableScrollPhysics(),
+    itemCount: quiz.length,
+    itemBuilder: (context, index) {
+      final quizItem = quiz[index];
+      return Card(
+        margin: EdgeInsets.only(bottom: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Colors.orange.shade100),
+        ),
+        child: ListTile(
+          contentPadding: EdgeInsets.all(16),
+          leading: CircleAvatar(
+            backgroundColor: Colors.orange.shade100,
+            child: Icon(Icons.quiz, color: Colors.orange),
+          ),
+          title: Text(
+            quizItem.name,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(quizItem.description),
+              SizedBox(height: 4),
+              // Text(
+              //   'Created At: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(quizItem.))}',
+              //   style: TextStyle(
+              //     color: Colors.blue,
+              //     fontWeight: FontWeight.w500,
+              //   ),
+              // ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(Icons.edit_note, color: const Color.fromARGB(255, 0, 0, 0)),
+                onPressed: () {
+                  // Add your edit quiz logic here
+                  _showEditQuizDialog(context, quizItem);
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_sweep_outlined, color: Colors.black),
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: const Text('Delete Quiz'),
+                        content: const Text('Are you sure you want to delete this quiz?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+
+                  if (confirm == true) {
+                    try {
+                      // Your logic for deleting quiz
+                      await _deleteQuiz(quizItem.quizId);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Quiz deleted successfully!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } catch (error) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to delete quiz: $error'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+
+              ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => QuizSubmissionPage(
+                              quizId: quizItem.quizId,
+                              ),
+                        ),
+                      );
+                    },
+                    child: Text("View Submissions")),
+
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+// Show Edit Dialog for Quiz
+void _showEditQuizDialog(BuildContext context, AdminQuizModel quiz) {
+  // Implement your edit dialog logic here
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text('Edit Quiz: ${quiz.name}'),
+        content: Column(
+          children: [
+            TextField(
+              controller: TextEditingController(text: quiz.name),
+              decoration: InputDecoration(labelText: 'Quiz Name'),
+            ),
+            TextField(
+              controller: TextEditingController(text: quiz.description),
+              decoration: InputDecoration(labelText: 'Description'),
+            ),
+            // Add other fields if needed (like questions, etc.)
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Handle update logic
+              Navigator.of(context).pop();
+            },
+            child: Text('Save'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancel'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// Function to delete a quiz (You can modify it as needed for your backend)
+Future<void> _deleteQuiz(int quizId) async {
+  // Your logic for deleting a quiz
+  print('Deleted quiz with ID: $quizId');
+}
 
   Widget _buildLessonsList(List<AdminLessonmodel> lessons) {
     if (lessons.isEmpty) {
@@ -1226,7 +1427,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                           ),
                         );
 
-                        await _loadLessonsAndAssignments();
+                        await  _buildLessonsAndAssignmentsquizView();
                       } catch (error) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -1243,6 +1444,18 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                     }
                   },
                 ),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SubmissionPage(
+                              assignmentId: assignment.assignmentId
+                              ),
+                        ),
+                      );
+                    },
+                    child: Text("View Submissions")),
               ],
             ),
           ),
@@ -1354,7 +1567,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                             Divider(),
                             Padding(
                               padding: EdgeInsets.all(16),
-                              child: _buildLessonsAndAssignmentsView(),
+                              child:  _buildLessonsAndAssignmentsquizView(),
                             ),
                           ],
                         ),

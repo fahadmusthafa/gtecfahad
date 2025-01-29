@@ -6,7 +6,8 @@ import 'package:lms/screens/admin/widgets/bottom.dart';
 import 'package:lms/screens/admin/widgets/mainmenu.dart';
 import 'package:lms/screens/admin/widgets/searchfiled.dart';
 import 'package:lms/screens/admin/widgets/usercard.dart';
-
+import 'package:provider/provider.dart';
+import 'package:lms/provider/authprovider.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   @override
@@ -18,6 +19,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   TextEditingController searchController = TextEditingController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  @override
+  void initState() {
+    super.initState();
+    // Initialize data after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider =
+          Provider.of<AdminAuthProvider>(context, listen: false);
+      // Trigger profile fetch if we have currentUserId but no profile
+      if (authProvider.currentUserId != null &&
+          authProvider.userProfile == null) {
+        authProvider.fetchUserProfileProvider(authProvider.currentUserId!);
+      }
+    });
+  }
+
   void updateContent(String newContent) {
     setState(() {
       selectedContent = newContent;
@@ -28,10 +44,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     if (value == 'Settings') {
       updateContent('Settings');
     } else if (value == 'Sign Out') {
+      // Handle sign out
+      final authProvider =
+          Provider.of<AdminAuthProvider>(context, listen: false);
+      authProvider.logout();
+      Navigator.of(context)
+          .pushReplacementNamed('/login'); // Navigate to login screen
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +116,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 }
 
-
 class Sidebar extends StatelessWidget {
   final Function(String) onMenuItemSelected;
   final TextEditingController searchController;
@@ -110,7 +129,9 @@ class Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sidebarWidth = isLargeScreen ? 300.0 : MediaQuery.of(context).size.width * 0.8;
+    final sidebarWidth =
+        isLargeScreen ? 300.0 : MediaQuery.of(context).size.width * 0.8;
+    final authProvider = Provider.of<AdminAuthProvider>(context);
 
     return Card(
       elevation: 4,
@@ -128,7 +149,8 @@ class Sidebar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AdminUserCard(userId: 'userId'),
+                    // Pass the currentUserId to AdminUserCard
+                    AdminUserCard(userId: authProvider.currentUserId),
                     const SizedBox(height: 20),
                     AdminSearchField(searchController: searchController),
                     const SizedBox(height: 20),
@@ -158,22 +180,15 @@ class Sidebar extends StatelessWidget {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
 class ContentArea extends StatelessWidget {
   final String selectedContent;
   final TextEditingController searchController;
-  final bool isLargeScreen;  // Accepting isLargeScreen
+  final bool isLargeScreen; // Accepting isLargeScreen
 
-  const ContentArea({required this.selectedContent, required this.searchController, required this.isLargeScreen});
+  const ContentArea(
+      {required this.selectedContent,
+      required this.searchController,
+      required this.isLargeScreen});
 
   @override
   Widget build(BuildContext context) {
@@ -182,8 +197,6 @@ class ContentArea extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-         
-          
           Expanded(child: _buildContent(selectedContent)),
         ],
       ),
@@ -195,12 +208,12 @@ class ContentArea extends StatelessWidget {
       case 'Course Content':
         return AdminAddCourse();
 
-         case 'Course Management':
+      case 'Course Management':
         return AdminAddCourse();
-      
+
       case 'Students Manager':
         return AdminAddStudent();
-        case 'Our Centers':
+      case 'Our Centers':
         return UsersTabView();
       case 'live':
         return AdminAddCourse();
@@ -211,5 +224,3 @@ class ContentArea extends StatelessWidget {
     }
   }
 }
-
-
