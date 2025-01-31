@@ -21,6 +21,11 @@ class AdminAuthProvider with ChangeNotifier {
 
   int? courseId;
 
+  String? _error;
+  CourseCountsResponse? _courseCounts;
+  CourseCountsResponse? get courseCounts => _courseCounts;
+  String? get error=>_error;
+
   int? assignmentId;
   final Map<int, List<Submission>> _submissions = {};
 
@@ -1103,4 +1108,19 @@ class AdminAuthProvider with ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<void> AdminfetchCourseCountsProvider() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _courseCounts = await _apiService.AdminfetchCourseCounts( _token!);
+    } catch (e) {
+      _error = e.toString();
+    }
+
+    _isLoading = false;
+    notifyListeners();
+}
 }

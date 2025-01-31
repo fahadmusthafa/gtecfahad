@@ -1326,6 +1326,21 @@ Future<String> AdmindeleteAdminLive(int courseId ,int batchId, String token) asy
     print("Exception details: $e");
     throw Exception("Error deleting Live: $e");
   }
-}
+} 
+  Future<CourseCountsResponse> AdminfetchCourseCounts(String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/admin/getCount'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return CourseCountsResponse.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load course counts: ${response.statusCode}');
+    }
+  }
 
 }

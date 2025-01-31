@@ -123,8 +123,6 @@ class AdminAllusersmodel {
   }
 }
 
-
-
 class AdminQuizModel {
   final int quizId;
   final String name;
@@ -455,9 +453,12 @@ class Submission {
       studentId: json['studentId'] ?? 0,
       status: json['status'] ?? '',
       content: json['content'] ?? '',
-      submittedAt: DateTime.parse(json['submittedAt'] ?? DateTime.now().toIso8601String()),
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
+      submittedAt: DateTime.parse(
+          json['submittedAt'] ?? DateTime.now().toIso8601String()),
+      createdAt:
+          DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      updatedAt:
+          DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
       studentName: json['Student']?['name'] ?? 'Unknown',
       studentEmail: json['Student']?['email'] ?? 'No email',
     );
@@ -507,7 +508,7 @@ class AdminLiveLinkResponse {
   final String liveLink;
   final DateTime liveStartTime;
 
- AdminLiveLinkResponse({
+  AdminLiveLinkResponse({
     required this.message,
     required this.liveLink,
     required this.liveStartTime,
@@ -518,6 +519,77 @@ class AdminLiveLinkResponse {
       message: json['message'] as String,
       liveLink: json['liveLink'] as String,
       liveStartTime: DateTime.parse(json['liveStartTime'] as String),
-);
+    );
+  }
 }
+
+class CourseCountsResponse {
+  final String message;
+  final int courseCount;
+  final int batchCount;
+  final int studentCount;
+  final int teacherCount;
+  final List<DetailedCourse> detailedCounts;
+
+  CourseCountsResponse({
+    required this.message,
+    required this.courseCount,
+    required this.batchCount,
+    required this.studentCount,
+    required this.teacherCount,
+    required this.detailedCounts,
+  });
+
+  factory CourseCountsResponse.fromJson(Map<String, dynamic> json) {
+    return CourseCountsResponse(
+      message: json['message'],
+      courseCount: json['courseCount'],
+      batchCount: json['batchCount'],
+      studentCount: json['studentCount'],
+      teacherCount: json['teacherCount'],
+      detailedCounts: (json['detailedCounts'] as List)
+          .map((e) => DetailedCourse.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
+class DetailedCourse {
+  final int courseId;
+  final String courseName;
+  final List<Batch> batches;
+
+  DetailedCourse({
+    required this.courseId,
+    required this.courseName,
+    required this.batches,
+  });
+
+  factory DetailedCourse.fromJson(Map<String, dynamic> json) {
+    return DetailedCourse(
+      courseId: json['courseId'],
+      courseName: json['courseName'],
+      batches: (json['batches'] as List).map((e) => Batch.fromJson(e)).toList(),
+    );
+  }
+}
+
+class Batch {
+  final int batchId;
+  final String? batchName;
+  final int studentCount;
+
+  Batch({
+    required this.batchId,
+    this.batchName,
+    required this.studentCount,
+  });
+
+  factory Batch.fromJson(Map<String, dynamic> json) {
+    return Batch(
+      batchId: json['batchId'],
+      batchName: json['batchName'],
+      studentCount: json['studentCount'],
+    );
+  }
 }
