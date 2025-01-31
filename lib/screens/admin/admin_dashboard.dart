@@ -158,19 +158,11 @@ class ContentArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            currentRoute,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue[900],
-            ),
-          ),
-          SizedBox(height: 20),
+          
           Expanded(child: _buildContent()),
         ],
       ),
