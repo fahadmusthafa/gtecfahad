@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lms/provider/authprovider.dart';
-import 'package:lms/screens/admin/login/admin_login.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -22,7 +21,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'GTEC LMS',
         theme: ThemeData(primarySwatch: Colors.blue),
-        home: AdminLoginScreen(),
+        home: SplashScreen(),
       ),
     );
   }

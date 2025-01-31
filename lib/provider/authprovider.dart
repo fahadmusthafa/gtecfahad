@@ -3,9 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:lms/contants/gtec_token.dart';
 import 'package:lms/models/admin_model.dart';
 import 'package:lms/screens/admin/admin_dashboard.dart';
+import 'package:lms/screens/admin/login/admin_login.dart';
 import 'package:lms/services/webservice.dart';
 
 class AdminAuthProvider with ChangeNotifier {
+  void clearModuleData() {
+    _courseModules = {};
+    notifyListeners();
+  }
+
   String? _token;
   String? deleteMessage;
   bool isLoading = false;
@@ -29,6 +35,16 @@ class AdminAuthProvider with ChangeNotifier {
   Map<int, List<QuizSubmission>> _quizsubmissions = {};
   Map<int, List<QuizSubmission>> get quizsubmissions => _quizsubmissions;
 
+  Map<int, List<AdminLiveLinkResponse>> _livebatch = {};
+
+  final Map<int, AdminLiveLinkResponse> _liveBatch = {};
+
+  Future<List<AdminLiveLinkResponse>> SupergetLiveForbatch(int batchId) async {
+    if (_livebatch[batchId] == null) {
+      await AdminfetchLiveAdmin(batchId); // Make sure the data is fetched
+    }
+    return _livebatch[batchId] ?? []; // Return the list of live links
+  }
 
   String? get token => _token;
 
@@ -48,8 +64,6 @@ class AdminAuthProvider with ChangeNotifier {
   Map<int, List<AdminModulemodel>> _courseModules = {};
 
   Map<int, List<AdminLessonmodel>> _moduleLessons = {};
-
-  Map<int, List<AdminLiveLinkResponse>> _livebatch = {};
 
   Map<int, List<AdminQuizModel>> _moduleQuizzes = {};
 
@@ -100,8 +114,7 @@ class AdminAuthProvider with ChangeNotifier {
 // Modify this method to return a Future<List<AdminLiveLinkResponse>> instead of just a list
   Future<List<AdminLiveLinkResponse>> getLiveForbatch(int batchId) async {
     if (_livebatch[batchId] == null) {
-      await AdminfetchLivelinkForModuleProvider(
-          courseId!, batchId); // Make sure the data is fetched
+      await AdminfetchLiveAdmin(batchId); // Make sure the data is fetched
     }
     return _livebatch[batchId] ?? []; // Return the list of live links
   }
@@ -165,7 +178,7 @@ class AdminAuthProvider with ChangeNotifier {
   }
 
   // Logout method
-  Future<void> logout() async {
+  Future<void> Superlogout() async {
     await clearToken();
     _token = null;
     notifyListeners();
@@ -174,24 +187,22 @@ class AdminAuthProvider with ChangeNotifier {
   // Check authentication and automatically fetch courses if authenticated
   Future<void> AdmincheckAuthprovider(BuildContext context) async {
     _token = await getToken();
-    if (_token != null) {
-      try {
-        // Fetch courses right after confirming the token
-        await AdminfetchCoursesprovider(); // Fetch courses after token validation
 
-        // Optionally validate the token if needed
-        notifyListeners();
-        // Navigate to the dashboard if token is valid
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
-        );
-      } catch (error) {
-        print('Auto-login failed: $error');
-        // Clear token on failure
-        await logout();
-      }
+    // Check if the token exists (indicating the user is logged in)
+    if (_token != null) {
+      // Navigate to StudentLMSHomePage if the user is logged in
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
+      );
+    } else {
+      // Navigate to UserLogin page if the user is not logged in
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => AdminLoginScreen()),
+      );
     }
+    notifyListeners();
   }
 
   // Fetch courses from the API
@@ -609,55 +620,6 @@ class AdminAuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> AdmincreateLivelinkprovider(
-    int batchId,
-    int courseId,
-    String liveLink,
-    DateTime liveStartTime,
-  ) async {
-    if (_token == null) throw Exception('Token is missing');
-    try {
-      print('Creating LiveLink for courseId: $courseId and batchId: $batchId');
-
-      // Call API to create the live link
-      await _apiService.AdminpostLiveLink(
-          _token!, courseId, batchId, liveLink, liveStartTime);
-
-      print('LiveLink creation successful. Fetching updated modules...');
-
-      // Fetch updated modules after creation
-      await AdminfetchLivelinkForModuleProvider(courseId, batchId);
-
-      print('LiveLink created successfully.');
-    } catch (e) {
-      print('Error creating LiveLink: $e');
-      if (e.toString().contains("Course not found")) {
-        throw Exception('Course ID $courseId not found. Please verify.');
-      } else {
-        throw Exception('Failed to create LiveLink: $e');
-      }
-    }
-  }
-
-  Future<AdminLiveLinkResponse?> AdminfetchLivelinkForModuleProvider(
-      int courseId, int batchId) async {
-    if (_token == null) throw Exception('Token is missing');
-    try {
-      // Fetch the live link using the API
-      final live = await _apiService.AdminfetchgetLiveLinkbatchAPI(
-          _token!, courseId, batchId);
-
-      // Store the live link in the _livebatch map
-      _livebatch[batchId] = [live]; // Wrap the single response in a list
-      notifyListeners();
-
-      return live; // Return the single live link
-    } catch (e) {
-      print('Error fetching lessons for module: $e');
-      rethrow;
-    }
-  }
-
   Future<void> createQuizProvider({
     required int batchId,
     required int courseId,
@@ -931,7 +893,8 @@ class AdminAuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final quizsubmissions = await _apiService.fetchQuizAnswers(quizId, _token!);
+      final quizsubmissions =
+          await _apiService.fetchQuizAnswers(quizId, _token!);
       _quizsubmissions[quizId] = quizsubmissions;
     } catch (e) {
       _quizsubmissions[quizId] = [];
@@ -940,5 +903,204 @@ class AdminAuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-}
 
+  Future<void> deleteQuizProvider(
+      int courseId, int moduleId, int quizId) async {
+    if (_token == null) throw Exception('Token is missing');
+
+    try {
+      await _apiService.deleteQuizAPI(
+        token: _token!,
+        courseId: courseId,
+        moduleId: moduleId,
+        quizId: quizId,
+      );
+
+      // Only remove from local state if API call was successful
+      _moduleQuiz.forEach((key, quizzes) {
+        _moduleQuiz[key] =
+            quizzes.where((quiz) => quiz.quizId != quizId).toList();
+      });
+
+      notifyListeners();
+    } catch (e) {
+      // Log the error for debugging
+      print('Error in deleteQuizProvider: $e');
+
+      // Rethrow with a more user-friendly message
+      if (e.toString().contains('Quiz not found')) {
+        throw Exception('Quiz not found or already deleted');
+      } else if (e.toString().contains('Network error')) {
+        throw Exception('Please check your internet connection and try again');
+      } else {
+        throw Exception('Unable to delete quiz. Please try again later.');
+      }
+    }
+  }
+
+  Future<void> updateQuizProvider({
+    required int quizId,
+    required String name,
+    required String description,
+    required List<Map<String, dynamic>> questions,
+  }) async {
+    if (_token == null) throw Exception('Token is missing');
+
+    // Validate input data
+    if (name.isEmpty) throw Exception('Quiz name cannot be empty');
+    if (description.isEmpty)
+      throw Exception('Quiz description cannot be empty');
+    if (questions.isEmpty)
+      throw Exception('Quiz must have at least one question');
+
+    try {
+      await _apiService.updateQuizAPI(
+        token: _token!,
+        quizId: quizId,
+        data: {
+          'name': name,
+          'description': description,
+          'questions': questions,
+        },
+      );
+
+      notifyListeners();
+    } catch (e) {
+      print('Error in updateQuizProvider: $e');
+      throw Exception('Failed to update quiz: $e');
+    }
+  }
+
+  Future<void> updateQuestionProvider({
+    required int quizId,
+    required int questionId,
+    required String text,
+    required List<Map<String, dynamic>> answers,
+  }) async {
+    if (_token == null) throw Exception('Token is missing');
+
+    try {
+      await _apiService.updateQuestionAPI(
+        token: _token!,
+        quizId: quizId,
+        questionId: questionId,
+        data: {
+          'text': text,
+          'answers': answers,
+        },
+      );
+
+      notifyListeners();
+    } catch (e) {
+      print('Error in updateQuestionProvider: $e');
+      throw Exception('Failed to update question: $e');
+    }
+  }
+
+  Future<void> deleteQuestionProvider({
+    required int quizId,
+    required int questionId,
+  }) async {
+    if (_token == null) throw Exception('Token is missing');
+
+    try {
+      await _apiService.deleteQuestionAPI(
+        token: _token!,
+        quizId: quizId,
+        questionId: questionId,
+      );
+
+      // Update local state if needed
+      notifyListeners();
+    } catch (e) {
+      // Log the error for debugging
+      print('Error in deleteQuestionProvider: $e');
+
+      // Rethrow with a more user-friendly message
+      if (e.toString().contains('Question not found')) {
+        throw Exception('Question not found or already deleted');
+      } else if (e.toString().contains('Network error')) {
+        throw Exception('Please check your internet connection and try again');
+      } else {
+        throw Exception('Unable to delete question. Please try again later.');
+      }
+    }
+  }
+
+  Future<AdminLiveLinkResponse?> AdminfetchLiveAdmin(int batchId) async {
+    if (_token == null) {
+      print('Error: Token is null. Please authenticate first.');
+      return null; // Return null instead of throwing an exception
+    }
+
+    try {
+      final liveData = await _apiService.AdminfetchLiveAdmin(_token!, batchId);
+      _liveBatch[batchId] = liveData!;
+      notifyListeners(); // Trigger UI rebuild
+      return liveData;
+    } catch (error) {
+      print('Failed to fetch live data: $error');
+      return null; // Return null so UI can handle it gracefully
+    }
+  }
+
+  Future<void> AdmincreateLivelinkprovider(
+    int batchId,
+    String liveLink,
+    DateTime liveStartTime,
+  ) async {
+    if (_token == null) throw Exception('Token is missing');
+    try {
+      print('Creating LiveLink for courseId: $courseId and batchId: $batchId');
+
+      // Call API to create the live link
+      await _apiService.AdminpostLiveLink(
+          _token!, batchId, liveLink, liveStartTime);
+
+      print('LiveLink creation successful. Fetching updated live data...');
+
+      // Fetch updated live data after creation
+      await AdminfetchLiveAdmin(batchId);
+
+      print('LiveLink created and data refreshed successfully.');
+    } catch (e) {
+      print('Error creating LiveLink: $e');
+      if (e.toString().contains("Course not found")) {
+        throw Exception('Course ID $courseId not found. Please verify.');
+      } else {
+        throw Exception('Failed to create LiveLink: $e');
+      }
+    }
+  }
+
+  Future<void> AdminupdateLive(
+      int batchId, String liveLink, DateTime startTime) async {
+    if (_token == null) throw Exception('Token is missing');
+
+    try {
+      await _apiService.AdminupdateLIveAPI(
+          _token!, batchId, liveLink, startTime);
+      await AdminfetchLiveAdmin(
+          batchId); // Refresh the course list after update
+    } catch (e) {
+      print('Error updating course: $e');
+      throw Exception('Failed to update course');
+    }
+  }
+
+  Future<void> AdmindeleteLiveprovider(int courseId, int batchId) async {
+    if (_token == null || _token!.isEmpty) {
+      throw Exception('Invalid or missing token');
+    }
+
+    try {
+      final result =
+          await _apiService.AdmindeleteAdminLive(courseId, batchId, _token!);
+      print("Delete result: $result");
+      notifyListeners();
+    } catch (e) {
+      print('Error in provider while deleting: $e');
+      rethrow;
+    }
+  }
+}

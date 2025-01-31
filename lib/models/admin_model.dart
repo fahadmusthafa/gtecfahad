@@ -123,25 +123,7 @@ class AdminAllusersmodel {
   }
 }
 
-class AdminLiveLinkResponse {
-  final String message;
-  final String liveLink;
-  final DateTime liveStartTime;
 
-  AdminLiveLinkResponse({
-    required this.message,
-    required this.liveLink,
-    required this.liveStartTime,
-  });
-
-  factory AdminLiveLinkResponse.fromJson(Map<String, dynamic> json) {
-    return AdminLiveLinkResponse(
-      message: json['message'] as String,
-      liveLink: json['liveLink'] as String,
-      liveStartTime: DateTime.parse(json['liveStartTime'] as String),
-    );
-  }
-}
 
 class AdminQuizModel {
   final int quizId;
@@ -518,4 +500,24 @@ class QuizSubmission {
       submittedAt: DateTime.parse(json['submittedAt']),
     );
   }
+}
+
+class AdminLiveLinkResponse {
+  final String message;
+  final String liveLink;
+  final DateTime liveStartTime;
+
+ AdminLiveLinkResponse({
+    required this.message,
+    required this.liveLink,
+    required this.liveStartTime,
+  });
+
+  factory AdminLiveLinkResponse.fromJson(Map<String, dynamic> json) {
+    return AdminLiveLinkResponse(
+      message: json['message'] as String,
+      liveLink: json['liveLink'] as String,
+      liveStartTime: DateTime.parse(json['liveStartTime'] as String),
+);
+}
 }

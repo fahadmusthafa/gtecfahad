@@ -4,13 +4,13 @@ class AdminSidebarButton extends StatelessWidget {
   final IconData icon;
   final String text;
   final VoidCallback onTap;
-  final bool isSelected;
+  final bool selected;
 
-  AdminSidebarButton({
+  const AdminSidebarButton({super.key, 
     required this.icon,
     required this.text,
     required this.onTap,
-    this.isSelected = false,
+    this.selected = false,
   });
 
   @override
@@ -18,27 +18,27 @@ class AdminSidebarButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: 1),
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        margin: EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue : Colors.transparent,
-          borderRadius:
-              BorderRadius.circular(10), // Applies circular border to all sides
+          color: selected ? Colors.blue[100] : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: ListTile(
-          leading: Icon(
-            icon,
-            color: isSelected ? Colors.white : Colors.blueGrey,
-          ),
-          title: Text(
-            text,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: isSelected ? Colors.white : Colors.blueGrey,
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: selected ? Colors.blue : Colors.black54,
             ),
-          ),
-          contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
-          visualDensity: VisualDensity.compact,
+            SizedBox(width: 16),
+            Text(
+              text,
+              style: TextStyle(
+                color: selected ? Colors.blue : Colors.black87,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );

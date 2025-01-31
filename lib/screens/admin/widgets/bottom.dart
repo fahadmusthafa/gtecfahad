@@ -1,32 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:lms/screens/admin/widgets/sidebarbutton.dart';
+import 'package:lms/provider/authprovider.dart';
+import 'package:lms/screens/admin/login/admin_login.dart';
+import 'package:provider/provider.dart';
 
 class AdminBottom extends StatefulWidget {
   final Function(String) onMenuItemSelected;
   final bool isLargeScreen;
 
   const AdminBottom({
-    Key? key,
+    super.key,
     required this.onMenuItemSelected,
     required this.isLargeScreen,
-  }) : super(key: key);
+  });
 
   @override
-  _BottomState createState() => _BottomState();
+  _AdminBottomState createState() => _AdminBottomState();
 }
 
-class _BottomState extends State<AdminBottom> {
-  String selectedMenu = '';
+class _AdminBottomState extends State<AdminBottom> {
   bool isLoading = false;
 
-  void updateSelectedMenu(String newMenu) {
+  Future<void> _logout(BuildContext context) async {
     setState(() {
-      selectedMenu = newMenu;
+      isLoading = true;
     });
-    widget.onMenuItemSelected(newMenu);
+
+    try {
+      await Provider.of<AdminAuthProvider>(context, listen: false)
+          .Superlogout(); // Call the provider function
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => AdminLoginScreen()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Logout failed. Please try again.')),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +50,35 @@ class _BottomState extends State<AdminBottom> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-         
-          AdminSidebarButton(
-            icon: Icons.logout,
-            text: isLoading ? 'Logging out...' : 'Log out',
-            isSelected: selectedMenu == 'Log out',
-            onTap: () =>isLoading  // Fixed: Properly calling _logout with context
+          Divider(),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue, // Blue color for the button
+                padding: const EdgeInsets.symmetric(
+                    vertical: 14.0, horizontal: 24.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0), // Rounded corners
+                ),
+                elevation: 5, // Add some elevation for a shadow effect
+              ),
+              onPressed: isLoading
+                  ? null
+                  : () => _logout(context), // Disable the button when loading
+              child: isLoading
+                  ? const CircularProgressIndicator(
+                      color: Colors.white) // Show loading indicator
+                  : const Text(
+                      'Log out',
+                      style: TextStyle(
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white, // White text color
+                      ),
+                    ),
+            ),
           ),
         ],
       ),

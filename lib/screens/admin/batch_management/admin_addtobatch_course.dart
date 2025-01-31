@@ -39,11 +39,7 @@ class _AdminAddStudentState extends State<AdminAddStudent> {
             letterSpacing: 0.5,
           ),
         ),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(16),
-          ),
-        ),
+       
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -107,7 +103,7 @@ class _AdminAddStudentState extends State<AdminAddStudent> {
                   color: lightBlue,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.school, size: 32, color: primaryBlue),
+                child: Icon(Icons.people, size: 32, color: primaryBlue),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -115,7 +111,7 @@ class _AdminAddStudentState extends State<AdminAddStudent> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Course Management',
+                      'Student Management',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,

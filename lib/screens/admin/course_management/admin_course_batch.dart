@@ -448,6 +448,10 @@ class _AdminCourseBatchScreenState extends State<AdminCourseBatchScreen> {
                                     children: batches.map((batch) {
                                       return GestureDetector(
                                         onTap: () {
+                                          Provider.of<AdminAuthProvider>(
+                                                  context,
+                                                  listen: false)
+                                              .clearModuleData();
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(

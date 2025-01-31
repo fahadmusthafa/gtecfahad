@@ -1,56 +1,31 @@
 import 'package:flutter/material.dart';
+
+import 'package:lms/screens/admin/batch_management/admin_addtobatch_course.dart';
+import 'package:lms/screens/admin/batch_management/admin_live_management.dart';
 import 'package:lms/screens/admin/course_management/admin_add_course.dart';
 import 'package:lms/screens/admin/course_management/admin_see_allstudent.dart';
-import 'package:lms/screens/admin/batch_management/admin_addtobatch_course.dart';
 import 'package:lms/screens/admin/widgets/bottom.dart';
-import 'package:lms/screens/admin/widgets/mainmenu.dart';
+import 'package:lms/screens/admin/widgets/dashboard.dart';
 import 'package:lms/screens/admin/widgets/searchfiled.dart';
+import 'package:lms/screens/admin/widgets/sidebarbutton.dart';
 import 'package:lms/screens/admin/widgets/usercard.dart';
-import 'package:provider/provider.dart';
-import 'package:lms/provider/authprovider.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
+  const AdminDashboardScreen({super.key});
+
   @override
   _AdminDashboardScreenState createState() => _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  String selectedContent = 'Dashboard';
+  String currentRoute = 'Dashboard';
   TextEditingController searchController = TextEditingController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  @override
-  void initState() {
-    super.initState();
-    // Initialize data after the widget is built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider =
-          Provider.of<AdminAuthProvider>(context, listen: false);
-      // Trigger profile fetch if we have currentUserId but no profile
-      if (authProvider.currentUserId != null &&
-          authProvider.userProfile == null) {
-        authProvider.fetchUserProfileProvider(authProvider.currentUserId!);
-      }
-    });
-  }
-
-  void updateContent(String newContent) {
+  void navigateTo(String route) {
     setState(() {
-      selectedContent = newContent;
+      currentRoute = route;
     });
-  }
-
-  void handleMenuSelection(String value) {
-    if (value == 'Settings') {
-      updateContent('Settings');
-    } else if (value == 'Sign Out') {
-      // Handle sign out
-      final authProvider =
-          Provider.of<AdminAuthProvider>(context, listen: false);
-      authProvider.logout();
-      Navigator.of(context)
-          .pushReplacementNamed('/login'); // Navigate to login screen
-    }
   }
 
   @override
@@ -63,75 +38,63 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       appBar: isLargeScreen
           ? null
           : AppBar(
-              title: Text('Dashboard'),
+              title: Text(currentRoute),
               leading: IconButton(
                 icon: Icon(Icons.menu),
                 onPressed: () => _scaffoldKey.currentState?.openDrawer(),
               ),
-              actions: [
-                PopupMenuButton<String>(
-                  onSelected: handleMenuSelection,
-                  itemBuilder: (context) {
-                    return {'Settings', 'Sign Out'}.map((choice) {
-                      return PopupMenuItem<String>(
-                        value: choice,
-                        child: Text(choice),
-                      );
-                    }).toList();
-                  },
-                ),
-              ],
             ),
       drawer: isLargeScreen
           ? null
           : Drawer(
               child: Sidebar(
                 isLargeScreen: isLargeScreen,
-                onMenuItemSelected: updateContent,
+                onNavigate: navigateTo,
                 searchController: searchController,
+                currentRoute: currentRoute,
               ),
             ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Row(
-            children: [
-              if (isLargeScreen)
-                Sidebar(
-                  isLargeScreen: isLargeScreen,
-                  onMenuItemSelected: updateContent,
-                  searchController: searchController,
-                ),
-              Expanded(
-                child: ContentArea(
-                  isLargeScreen: isLargeScreen,
-                  selectedContent: selectedContent,
-                  searchController: searchController,
-                ),
-              ),
-            ],
-          );
-        },
+      body: Row(
+        children: [
+          if (isLargeScreen)
+  
+            Sidebar(
+              isLargeScreen: isLargeScreen,
+              onNavigate: navigateTo,
+              searchController: searchController,
+              currentRoute: currentRoute,
+            ),
+          Expanded(
+            child: ContentArea(
+              isLargeScreen: isLargeScreen,
+              currentRoute: currentRoute,
+              searchController: searchController,
+            ),
+          ),
+        
+        ],
       ),
     );
   }
 }
 
 class Sidebar extends StatelessWidget {
-  final Function(String) onMenuItemSelected;
+  final Function(String) onNavigate;
   final TextEditingController searchController;
   final bool isLargeScreen;
+  final String currentRoute;
 
-  Sidebar({
-    required this.onMenuItemSelected,
+  const Sidebar({super.key, 
+    required this.onNavigate,
     required this.searchController,
     required this.isLargeScreen,
+    required this.currentRoute,
   });
 
   @override
   Widget build(BuildContext context) {
     final sidebarWidth =
         isLargeScreen ? 300.0 : MediaQuery.of(context).size.width * 0.8;
-    final authProvider = Provider.of<AdminAuthProvider>(context);
 
     return Card(
       elevation: 4,
@@ -149,24 +112,24 @@ class Sidebar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Pass the currentUserId to AdminUserCard
-                    AdminUserCard(userId: authProvider.currentUserId),
-                    const SizedBox(height: 20),
+                    AdminUserCard() ,
+                              const SizedBox(height: 20),
                     AdminSearchField(searchController: searchController),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 40),
                     Container(
                       constraints: BoxConstraints(
                         maxHeight: MediaQuery.of(context).size.height * 0.5,
                       ),
                       child: AdminMainMenu(
                         isLargeScreen: isLargeScreen,
-                        onMenuItemSelected: onMenuItemSelected,
+                        onNavigate: onNavigate,
+                        currentRoute: currentRoute,
                       ),
                     ),
                     const SizedBox(height: 90),
-                    Divider(),
+   
                     AdminBottom(
-                      onMenuItemSelected: onMenuItemSelected,
+                      onMenuItemSelected: onNavigate,
                       isLargeScreen: isLargeScreen,
                     ),
                   ],
@@ -180,47 +143,125 @@ class Sidebar extends StatelessWidget {
   }
 }
 
-class ContentArea extends StatelessWidget {
-  final String selectedContent;
-  final TextEditingController searchController;
-  final bool isLargeScreen; // Accepting isLargeScreen
 
-  const ContentArea(
-      {required this.selectedContent,
-      required this.searchController,
-      required this.isLargeScreen});
+class ContentArea extends StatelessWidget {
+  final String currentRoute;
+  final TextEditingController searchController;
+  final bool isLargeScreen;
+
+  const ContentArea({super.key, 
+    required this.currentRoute,
+    required this.searchController,
+    required this.isLargeScreen,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(0),
+      padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _buildContent(selectedContent)),
+          Text(
+            currentRoute,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue[900],
+            ),
+          ),
+          SizedBox(height: 20),
+          Expanded(child: _buildContent()),
         ],
       ),
     );
   }
 
-  Widget _buildContent(String selectedContent) {
-    switch (selectedContent) {
-      case 'Course Content':
+  Widget _buildContent() {
+    switch (currentRoute) {
+      case 'Course':
         return AdminAddCourse();
-
-      case 'Course Management':
-        return AdminAddCourse();
-
-      case 'Students Manager':
-        return AdminAddStudent();
-      case 'Our Centers':
+      case 'User':
         return UsersTabView();
-      case 'live':
-        return AdminAddCourse();
+      case 'Students':
+        return AdminAddStudent();
+      case 'Live':
+        return AdminAddLiveCourse();
       case 'Dashboard':
-        return AdminAddCourse();
+        return DashboardScreennew();
       default:
-        return AdminAddCourse();
+        return DashboardScreennew();
     }
+  }
+}
+
+class AdminMainMenu extends StatelessWidget {
+  final Function(String) onNavigate;
+  final bool isLargeScreen;
+  final String currentRoute;
+
+  const AdminMainMenu({super.key, 
+    required this.onNavigate,
+    required this.isLargeScreen,
+    required this.currentRoute,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(0, 0, 0, 9),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(16),
+          bottomRight: Radius.circular(16),
+        ),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: const Color.fromARGB(255, 146, 218, 228).withOpacity(0.2),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: Offset(2, 3),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AdminSidebarButton(
+              icon: Icons.dashboard,
+              text: 'Dashboard',
+              onTap: () => onNavigate('Dashboard'),
+              selected: currentRoute == 'Dashboard',
+            ),
+            AdminSidebarButton(
+              icon: Icons.book,
+              text: 'Course Management',
+              onTap: () => onNavigate('Course'),
+              selected: currentRoute == 'Course',
+            ),
+            AdminSidebarButton(
+              icon: Icons.live_tv,
+              text: 'Live Management',
+              onTap: () => onNavigate('Live'),
+              selected: currentRoute == 'Live',
+            ),
+            AdminSidebarButton(
+              icon: Icons.people_sharp,
+              text: 'Students Management',
+              onTap: () => onNavigate('Students'),
+              selected: currentRoute == 'Students',
+            ),
+            AdminSidebarButton(
+              icon: Icons.settings,
+              text: 'User Management',
+              onTap: () => onNavigate('User'),
+              selected: currentRoute == 'User',
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
