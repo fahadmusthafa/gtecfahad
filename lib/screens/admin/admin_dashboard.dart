@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lms/screens/admin/batch_management/add_teacher_batch.dart';
+import 'package:lms/screens/admin/batch_management/add_teachertobatch_couse.dart';
 
 import 'package:lms/screens/admin/batch_management/admin_addtobatch_course.dart';
 import 'package:lms/screens/admin/batch_management/admin_live_management.dart';
@@ -170,21 +172,23 @@ class ContentArea extends StatelessWidget {
   }
 
   Widget _buildContent() {
-    switch (currentRoute) {
-      case 'Course':
-        return AdminAddCourse();
-      case 'User':
-        return UsersTabView();
-      case 'Students':
-        return AdminAddStudent();
-      case 'Live':
-        return AdminAddLiveCourse();
-      case 'Dashboard':
-        return Dashboards();
-      default:
-        return Dashboards();
-    }
+  switch (currentRoute) {
+    case 'Course':
+      return AdminAddCourse();
+    case 'User':
+      return UsersTabView();
+    case 'Students':
+      return AdminAddStudent();
+    case 'Live':
+      return AdminAddLiveCourse();
+    case 'Teachers': 
+      return AdminAddTeacher();
+    case 'Dashboard':
+    default:
+      return Dashboards();
   }
+}
+
 }
 
 class AdminMainMenu extends StatelessWidget {
@@ -250,6 +254,11 @@ class AdminMainMenu extends StatelessWidget {
               text: 'User Management',
               onTap: () => onNavigate('User'),
               selected: currentRoute == 'User',
+            ), AdminSidebarButton(
+              icon: Icons.settings,
+              text: 'Teachers Management',
+              onTap: () => onNavigate('Teachers'),
+              selected: currentRoute == 'Teachers',
             ),
           ],
         ),
