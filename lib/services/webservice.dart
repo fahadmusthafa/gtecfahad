@@ -1343,4 +1343,38 @@ Future<String> AdmindeleteAdminLive(int courseId ,int batchId, String token) asy
     }
   }
 
+Future<BatchTeacherModel> AdminfetchTeachersBatchAPI(
+    String token,
+    int courseId,
+    int batchId,
+  ) async {
+    final url =
+        Uri.parse('$baseUrl/admin/getTeacherByBatchId/$courseId/$batchId');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return BatchTeacherModel.fromJson(data);
+      } else {
+        throw Exception('Failed to fetch teachers: ${response.body}');
+      }
+    } catch (e) {
+      print('Error: $e');
+      rethrow;
+    }
+  }
+
+
 }
+

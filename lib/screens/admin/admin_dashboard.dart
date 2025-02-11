@@ -128,7 +128,7 @@ class Sidebar extends StatelessWidget {
                         currentRoute: currentRoute,
                       ),
                     ),
-                    const SizedBox(height: 90),
+                    const SizedBox(height: 30),
    
                     AdminBottom(
                       onMenuItemSelected: onNavigate,
@@ -250,12 +250,12 @@ class AdminMainMenu extends StatelessWidget {
               selected: currentRoute == 'Students',
             ),
             AdminSidebarButton(
-              icon: Icons.settings,
+              icon: Icons.person,
               text: 'User Management',
               onTap: () => onNavigate('User'),
               selected: currentRoute == 'User',
             ), AdminSidebarButton(
-              icon: Icons.settings,
+              icon: Icons.person_pin,
               text: 'Teachers Management',
               onTap: () => onNavigate('Teachers'),
               selected: currentRoute == 'Teachers',

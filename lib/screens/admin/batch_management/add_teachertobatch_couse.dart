@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lms/screens/admin/batch_management/add_teacher_batch.dart';
+import 'package:lms/screens/admin/batch_management/teachers_in_batch.dart';
 import 'package:provider/provider.dart';
 import 'package:lms/provider/authprovider.dart';
 
@@ -476,7 +477,7 @@ class _AdminAddTeacherState extends State<AdminAddTeacher> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AdminTeacherAssignmentPage(
+                    builder: (context) => AdminTeacherPage(
                       courseId: selectedCourse.courseId,
                       batchId: selectedBatch.batchId,
                     ),
@@ -505,15 +506,15 @@ class _AdminAddTeacherState extends State<AdminAddTeacher> {
           Expanded(
             child: ElevatedButton.icon(
               onPressed: () {
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //     builder: (context) => TeachersListScreen(
-                //       courseId: selectedCourse.courseId,
-                //       batchId: selectedBatch.batchId,
-                //     ),
-                //   ),
-                // );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TeachersListScreen(
+                      courseId: selectedCourse.courseId,
+                      batchId: selectedBatch.batchId,
+                    ),
+                  ),
+                );
               },
               icon: const Icon(Icons.people),
               label: const Text(

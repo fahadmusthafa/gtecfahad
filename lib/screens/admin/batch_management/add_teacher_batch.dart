@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lms/provider/authprovider.dart';
 
-class AdminTeacherAssignmentPage extends StatefulWidget {
-  const AdminTeacherAssignmentPage({
+class AdminTeacherPage extends StatefulWidget {
+  final int courseId;
+  final int batchId;
+
+  const AdminTeacherPage({
     Key? key,
     required this.courseId,
     required this.batchId,
   }) : super(key: key);
 
-  final int courseId;
-  final int batchId;
-
   @override
-  _AdminTeacherAssignmentPageState createState() => _AdminTeacherAssignmentPageState();
+  State<AdminTeacherPage> createState() => _AdminTeacherPageState();
 }
 
-class _AdminTeacherAssignmentPageState extends State<AdminTeacherAssignmentPage> {
+class _AdminTeacherPageState extends State<AdminTeacherPage> {
   TextEditingController searchController = TextEditingController();
   String searchQuery = '';
   Set<int> teachersInBatch = {};
@@ -31,7 +31,28 @@ class _AdminTeacherAssignmentPageState extends State<AdminTeacherAssignmentPage>
     Future.microtask(() {
       final provider = Provider.of<AdminAuthProvider>(context, listen: false);
       provider.AdminfetchallusersProvider();
+      _fetchCurrentBatchTeachers();
     });
+  }
+
+  Future<void> _fetchCurrentBatchTeachers() async {
+    final provider = Provider.of<AdminAuthProvider>(context, listen: false);
+    try {
+      await provider.AdminfetchallteachersBatchProvider(
+        widget.courseId,
+        widget.batchId,
+      );
+      if (mounted) {
+        setState(() {
+          teachersInBatch = Set.from(
+            (provider.batchteacherData?.teachers ?? [])
+                .map((teacher) => teacher.teacherId)
+          );
+        });
+      }
+    } catch (e) {
+      print('Error fetching batch teachers: $e');
+    }
   }
 
   void _showActionConfirmation({
@@ -70,54 +91,50 @@ class _AdminTeacherAssignmentPageState extends State<AdminTeacherAssignmentPage>
     );
   }
 
-  void _assignTeacher(int userId) {
+  void _assignTeacher(dynamic teacher) {
     _showActionConfirmation(
-      title: 'Assign Teacher',
-      message: 'Are you sure you want to assign this teacher to the batch?',
+      title: 'Add to Batch',
+      message: 'Are you sure you want to add ${teacher.name} to the batch?',
       onConfirm: () async {
         final provider = Provider.of<AdminAuthProvider>(context, listen: false);
         try {
           await provider.assignUserToBatchProvider(
             courseId: widget.courseId,
             batchId: widget.batchId,
-            userId: userId,
+            userId: teacher.userId,
           );
-          setState(() {
-            teachersInBatch.add(userId);
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Teacher assigned successfully!'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          );
+          
+          await _fetchCurrentBatchTeachers(); // Refresh the list
+          
+          _showSnackBar('${teacher.name} added to batch successfully!', isError: false);
         } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to assign teacher: $e'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          );
+          _showSnackBar('Failed to add teacher: $e', isError: true);
         }
       },
     );
   }
 
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<AdminAuthProvider>(context);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Assign Teachers'),
+        title: const Text('Manage Teachers'),
         backgroundColor: primaryBlue,
         elevation: 0,
       ),
@@ -154,152 +171,157 @@ class _AdminTeacherAssignmentPageState extends State<AdminTeacherAssignmentPage>
             ),
           ),
           Expanded(
-            child: provider.users == null
-                ? Center(
+            child: Consumer<AdminAuthProvider>(
+              builder: (context, provider, child) {
+                if (provider.users == null) {
+                  return Center(
                     child: CircularProgressIndicator(color: primaryBlue),
-                  )
-                : provider.users!.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                  );
+                }
+
+                if (provider.users!.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.people_outline, size: 64, color: mediumBlue),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No teachers found',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: primaryBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final teachers = provider.users!.where((user) =>
+                  user.role.toLowerCase() == 'teacher' &&
+                  (user.name.toLowerCase().contains(searchQuery) ||
+                   user.email.toLowerCase().contains(searchQuery))
+                ).toList();
+
+                return ListView.builder(
+                  itemCount: teachers.length,
+                  padding: const EdgeInsets.all(16),
+                  itemBuilder: (context, index) {
+                    final teacher = teachers[index];
+                    final bool isInBatch = teachersInBatch.contains(teacher.userId);
+
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: mediumBlue, width: 1),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
                           children: [
-                            Icon(
-                              Icons.school_outlined,
-                              size: 64,
-                              color: mediumBlue,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No teachers found',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: primaryBlue,
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundColor: primaryBlue,
+                              child: Text(
+                                teacher.name[0].toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: provider.users!.length,
-                        padding: const EdgeInsets.all(16),
-                        itemBuilder: (context, index) {
-                          final user = provider.users![index];
-                          
-                          // Only show users with teacher role
-                          if (user.role.toLowerCase() != 'teacher') {
-                            return const SizedBox.shrink();
-                          }
-
-                          if (!user.name.toLowerCase().contains(searchQuery) &&
-                              !user.email.toLowerCase().contains(searchQuery)) {
-                            return const SizedBox.shrink();
-                          }
-
-                          final bool isInBatch = teachersInBatch.contains(user.userId);
-
-                          return Card(
-                            elevation: 2,
-                            margin: const EdgeInsets.only(bottom: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              side: BorderSide(color: mediumBlue, width: 1),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  CircleAvatar(
-                                    radius: 30,
-                                    backgroundColor: primaryBlue,
-                                    child: Text(
-                                      user.name[0].toUpperCase(),
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  Text(
+                                    teacher.name,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          user.name,
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          user.email,
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.phone,
-                                              size: 16,
-                                              color: primaryBlue,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              user.phoneNumber,
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            Icon(
-                                              Icons.school,
-                                              size: 16,
-                                              color: primaryBlue,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Teacher',
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    teacher.email,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
                                     ),
                                   ),
-                                  ElevatedButton.icon(
-                                    onPressed: isInBatch 
-                                      ? null 
-                                      : () => _assignTeacher(user.userId),
-                                    icon: const Icon(Icons.person_add),
-                                    label: Text(isInBatch ? 'Added' : 'Assign'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: isInBatch 
-                                        ? Colors.grey
-                                        : primaryBlue,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.phone,
+                                        size: 16,
+                                        color: primaryBlue,
                                       ),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                        horizontal: 20,
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        teacher.phoneNumber,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 16),
+                                      Icon(
+                                        Icons.badge,
+                                        size: 16,
+                                        color: primaryBlue,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        teacher.role,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                          );
-                        },
+                            ElevatedButton.icon(
+                              onPressed: isInBatch
+                                ? null
+                                : () => _assignTeacher(teacher),
+                              icon: const Icon(Icons.person_add),
+                              label: Text(isInBatch ? 'Added' : 'Add teacher'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isInBatch 
+                                  ? Colors.grey
+                                  : Colors.blue,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 }

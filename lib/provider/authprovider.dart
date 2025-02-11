@@ -24,7 +24,7 @@ class AdminAuthProvider with ChangeNotifier {
   String? _error;
   CourseCountsResponse? _courseCounts;
   CourseCountsResponse? get courseCounts => _courseCounts;
-  String? get error=>_error;
+  String? get error => _error;
 
   int? assignmentId;
   final Map<int, List<Submission>> _submissions = {};
@@ -96,6 +96,11 @@ class AdminAuthProvider with ChangeNotifier {
       {}; // Map for storing course batches
 
   // Loading state
+
+  BatchTeacherModel? _batchteacherData;
+
+  BatchTeacherModel? get batchteacherData => _batchteacherData;
+
 
   Map<int, List<AdminCourseBatch>> get courseBatches => _courseBatches;
 
@@ -1115,12 +1120,35 @@ class AdminAuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _courseCounts = await _apiService.AdminfetchCourseCounts( _token!);
+      _courseCounts = await _apiService.AdminfetchCourseCounts(_token!);
     } catch (e) {
       _error = e.toString();
     }
 
     _isLoading = false;
     notifyListeners();
-}
+  }
+
+  
+  Future<void> AdminfetchallteachersBatchProvider(
+      int courseId, int batchId) async {
+    if (_token == null) throw Exception('Token is missing');
+
+    try {
+      final response = await _apiService.AdminfetchTeachersBatchAPI(
+        _token!,
+        courseId,
+        batchId,
+      );
+
+      _batchteacherData = response;
+      print('Fetched batch data: $_batchteacherData');
+      print('Number of teachers: ${_batchteacherData?.teachers.length}');
+
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching teachers: $e');
+      rethrow;
+    }
+  }
 }
