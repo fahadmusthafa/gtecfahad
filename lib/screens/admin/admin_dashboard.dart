@@ -5,7 +5,7 @@ import 'package:lms/screens/admin/batch_management/add_teachertobatch_couse.dart
 import 'package:lms/screens/admin/batch_management/admin_addtobatch_course.dart';
 import 'package:lms/screens/admin/batch_management/admin_live_management.dart';
 import 'package:lms/screens/admin/course_management/admin_add_course.dart';
-import 'package:lms/screens/admin/course_management/admin_see_allstudent.dart';
+import 'package:lms/screens/admin/course_management/admin_see_all_users.dart';
 import 'package:lms/screens/admin/widgets/bottom.dart';
 import 'package:lms/screens/admin/widgets/dashboard.dart';
 import 'package:lms/screens/admin/widgets/searchfiled.dart';

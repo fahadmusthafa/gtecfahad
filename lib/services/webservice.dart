@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:lms/models/admin_model.dart';
 
 class SuperAdminAPI {
@@ -429,29 +430,44 @@ class SuperAdminAPI {
     }
   }
 
-  Future<String> Admincreatebatch(
-      String token, int courseId, String batchName) async {
+  Future<AdminCourseBatch> adminCreateBatch(
+    String token,
+    int courseId,
+    String batchName,
+    String medium,
+    DateTime startTime, // Changed to startTime
+    DateTime endTime, // Changed to endTime
+  ) async {
     final url = Uri.parse('$baseUrl/admin/createBatch');
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'courseId': courseId,
-        'name': batchName,
-      }),
-    );
+    final requestBody = {
+      'courseId': courseId,
+      'name': batchName,
+      'medium': medium,
+      'startTime': startTime.toIso8601String(), // Changed to startTime
+      'endTime': endTime.toIso8601String(), // Changed to endTime
+    };
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      print(
-          'Batch created successfully: ${response.body}'); // Log the response body
-      return response.body;
-    } else {
-      print(
-          'Failed to create Batch: ${response.reasonPhrase}'); // Log failure reason
-      throw Exception('Failed to create Batch: ${response.reasonPhrase}');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return AdminCourseBatch.fromJson(jsonDecode(response.body));
+      } else {
+        Map<String, dynamic> errorBody = jsonDecode(response.body);
+        throw Exception(errorBody['message'] ?? 'Failed to create batch');
+      }
+    } catch (e) {
+      if (e is SocketException) {
+        throw Exception('Network error: Please check your internet connection');
+      }
+      rethrow;
     }
   }
 
@@ -471,28 +487,57 @@ class SuperAdminAPI {
       print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> Batches = jsonDecode(response.body)['batches'];
-        // Filter modules for the specific course
-        return Batches.map((item) => AdminCourseBatch.fromJson(item)).toList();
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        if (!responseData.containsKey('batches')) {
+          print('Response does not contain batches key: $responseData');
+          throw Exception('Invalid response format: missing batches key');
+        }
+
+        final List<dynamic> batches = responseData['batches'];
+
+        if (batches == null) {
+          print('Batches list is null');
+          return [];
+        }
+
+        return batches.map((item) {
+          try {
+            return AdminCourseBatch.fromJson(item);
+          } catch (e) {
+            print('Error parsing batch item: $item');
+            print('Error details: $e');
+            rethrow;
+          }
+        }).toList();
       } else {
-        throw Exception('Failed to fetch modules: ${response.body}');
+        print('Error response: ${response.body}');
+        throw Exception('Failed to fetch batches: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error: $e');
+      print('Error in AdminfetctBatchForCourseAPI: $e');
       rethrow;
     }
   }
 
   Future<String> AdminupdateBatchAPI(
-      String token, int courseId, int batchId, String batchName) async {
-    final url = Uri.parse(
-        '$baseUrl/admin/updateBatch'); // Ensure this is the correct endpoint for updating a course
+    String token,
+    int courseId,
+    int batchId,
+    String batchName,
+    String medium,
+    DateTime startTime,
+    DateTime endTime,
+  ) async {
+    final url = Uri.parse('$baseUrl/admin/updateBatch');
 
-    // Prepare the request payload in the correct format
     final payload = jsonEncode({
       'courseId': courseId,
       'batchId': batchId,
-      'name': batchName, // Ensure courseId is passed as a string if required
+      'name': batchName,
+      'medium': medium,
+      'startDate': startTime.toIso8601String(),
+      'endDate': endTime.toIso8601String()
     });
 
     try {
@@ -504,9 +549,7 @@ class SuperAdminAPI {
         },
         body: payload,
       );
-      print("___________________");
-      print(response.body);
-      print("___________________");
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.body;
       } else {
@@ -1200,7 +1243,7 @@ class SuperAdminAPI {
     }
   }
 
-    Future<AdminLiveLinkResponse?> AdminfetchLiveAdmin(
+  Future<AdminLiveLinkResponse?> AdminfetchLiveAdmin(
       String token, int batchId) async {
     final url = Uri.parse('$baseUrl/superadmin/getLiveLinkbatch/$batchId');
     try {
@@ -1227,43 +1270,45 @@ class SuperAdminAPI {
       return null;
     }
   }
-
-
-  Future<String> AdminpostLiveLink(
-    String token,
-    int batchId,
-    String liveLink,
-    DateTime? liveStartTime,
-  ) async {
-    final url = Uri.parse('$baseUrl/admin/$batchId/postLiveLink');
-
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'liveLink': liveLink,
-        'liveStartTime': liveStartTime
-            ?.add(const Duration(hours: 5, minutes: 30)) // Convert to IST
-            .toIso8601String(), // Send IST time
-      }),
-    );
-
-    print('Token: $token');
-    print('Batch ID: $batchId');
-    print(
-        'Live Start Time Sent (IST): ${liveStartTime?.add(const Duration(hours: 5, minutes: 30))}');
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      print('Live link posted successfully: ${response.body}');
-      return response.body;
-    } else {
-      print('Failed to create Live link: ${response.reasonPhrase}');
-      throw Exception('Failed to create Live link: ${response.reasonPhrase}');
-    }
+Future<String> AdminpostLiveLink(
+  String token,
+  int batchId,
+  String liveLink,
+  DateTime? liveStartTime,
+) async {
+  if (liveStartTime == null) {
+    throw Exception('Live start time cannot be null');
   }
+
+  final url = Uri.parse('$baseUrl/admin/$batchId/postLiveLink');
+
+  // Ensure the date-time is in IST (local time in India)
+  DateTime istDateTime = liveStartTime.toLocal(); 
+
+  final response = await http.post(
+    url,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    },
+    body: jsonEncode({
+      'liveLink': liveLink,
+      'liveStartTime': DateFormat("yyyy-MM-dd HH:mm:ss").format(istDateTime), // Correct format
+    }),
+  );
+
+  print('IST Time Sent: $istDateTime');
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    print('Live link posted successfully: ${response.body}');
+    return response.body;
+  } else {
+    print('Failed to create Live link: ${response.body}');
+    throw Exception('Failed to create Live link: ${response.body}');
+  }
+}
+
+
 
   Future<String> AdminupdateLIveAPI(
       String token, int batchId, String liveLink, DateTime startTime) async {
@@ -1298,35 +1343,40 @@ class SuperAdminAPI {
     }
   }
 
-Future<String> AdmindeleteAdminLive(int courseId ,int batchId, String token) async {
-  final url = Uri.parse("$baseUrl/admin/deleteLiveLink/$courseId/$batchId");
-  print("Delete URL: $url"); // Log the URL
-  print("Token being used: $token"); // Log the token (be careful with this in production)
-  
-  try {
-    final response = await http.delete(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-    
-    print("Response status code: ${response.statusCode}");
-    print("Response body: ${response.body}");
+  Future<String> AdmindeleteAdminLive(
+      int courseId, int batchId, String token) async {
+    final url = Uri.parse("$baseUrl/admin/deleteLiveLink/$courseId/$batchId");
+    print("Delete URL: $url"); // Log the URL
+    print(
+        "Token being used: $token"); // Log the token (be careful with this in production)
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return data['message'] ?? "Live deleted successfully";
-    } else {
-      print("Headers sent: ${response.request?.headers}"); // Log request headers
-      throw Exception("Failed to delete live course. Status Code: ${response.statusCode}. Response: ${response.body}");
+    try {
+      final response = await http.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print("Response status code: ${response.statusCode}");
+      print("Response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['message'] ?? "Live deleted successfully";
+      } else {
+        print(
+            "Headers sent: ${response.request?.headers}"); // Log request headers
+        throw Exception(
+            "Failed to delete live course. Status Code: ${response.statusCode}. Response: ${response.body}");
+      }
+    } catch (e) {
+      print("Exception details: $e");
+      throw Exception("Error deleting Live: $e");
     }
-  } catch (e) {
-    print("Exception details: $e");
-    throw Exception("Error deleting Live: $e");
   }
-} 
+
   Future<CourseCountsResponse> AdminfetchCourseCounts(String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/admin/getCount'),
@@ -1343,7 +1393,7 @@ Future<String> AdmindeleteAdminLive(int courseId ,int batchId, String token) asy
     }
   }
 
-Future<BatchTeacherModel> AdminfetchTeachersBatchAPI(
+  Future<BatchTeacherModel> AdminfetchTeachersBatchAPI(
     String token,
     int courseId,
     int batchId,
@@ -1375,6 +1425,41 @@ Future<BatchTeacherModel> AdminfetchTeachersBatchAPI(
     }
   }
 
+  Future<bool> sendResetEmail(String email) async {
+    final url =
+        Uri.parse('https://api.portfoliobuilders.in/api/forgotPassword');
+    final response = await http.post(
+      url,
+      body: jsonEncode({'email': email}),
+      headers: {'Content-Type': 'application/json'},
+    );
 
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception(jsonDecode(response.body)['message']);
+    }
+  }
+
+  /// Resets the password with OTP and new password
+  Future<bool> resetPassword(
+      String email, String otp, String newPassword) async {
+    final url =
+        Uri.parse('https://api.portfoliobuilders.in/api/resetPasswordWithOtp');
+    final response = await http.post(
+      url,
+      body: jsonEncode({
+        'email': email,
+        'otp': otp,
+        'newPassword': newPassword,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception(jsonDecode(response.body)['message']);
+    }
+  }
 }
-

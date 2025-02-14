@@ -188,7 +188,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           ),
                           const SizedBox(height: 16),
                           TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                                          ForgotPasswordHandler.showEmailPopup(
+                                              context);
+                                        },
                             child: const Text(
                               'Forgot Password?',
                               style:
@@ -215,6 +218,109 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class ForgotPasswordHandler {
+  static void showEmailPopup(BuildContext context) {
+    final TextEditingController emailController = TextEditingController();
+    final provider = Provider.of<AdminAuthProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Forgot Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  labelText: 'Enter your email',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 20),
+            ],
+          ),
+          actions: [
+            provider.isLoading
+                ? CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: () {
+                      provider
+                          .sendResetEmail(emailController.text, context)
+                          .then((_) {
+                        Navigator.pop(context); // Close the email dialog
+                        showOtpPopup(context, emailController.text);
+                      });
+                    },
+                    child: Text('Send'),
+                  ),
+          ],
+        );
+      },
+    );
+  }
+
+  static void showOtpPopup(BuildContext context, String email) {
+    final TextEditingController otpController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+    final provider = Provider.of<AdminAuthProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Reset Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: otpController,
+                decoration: InputDecoration(
+                  labelText: 'Enter OTP from Email',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'New Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 20),
+            ],
+          ),
+          actions: [
+            provider.isLoading
+                ? CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: () {
+                      provider
+                          .resetPassword(
+                        email,
+                        otpController.text,
+                        passwordController.text,
+                        context,
+                      )
+                          .then((_) {
+                        Navigator.pop(context); // Close the OTP dialog
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Password reset successful!')),
+                        );
+                      });
+                    },
+                    child: Text('Reset Password'),
+                  ),
+          ],
+        );
+      },
     );
   }
 }

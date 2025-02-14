@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lms/contants/gtec_token.dart';
 import 'package:lms/models/admin_model.dart';
@@ -100,7 +101,6 @@ class AdminAuthProvider with ChangeNotifier {
   BatchTeacherModel? _batchteacherData;
 
   BatchTeacherModel? get batchteacherData => _batchteacherData;
-
 
   Map<int, List<AdminCourseBatch>> get courseBatches => _courseBatches;
 
@@ -442,23 +442,45 @@ class AdminAuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> AdmincreateBatchprovider(String batchName, int courseId) async {
-    if (_token == null) throw Exception('Token is missing');
+  Future<void> AdminCreateBatchProvider(
+    String batchName,
+    int courseId,
+    String medium,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    if (_token == null) {
+      throw Exception('Authentication token is missing');
+    }
+
+    // Validate required fields
+    if (courseId <= 0) {
+      throw Exception('Invalid courseId');
+    }
+    if (batchName.trim().isEmpty) {
+      throw Exception('Batch name is required');
+    }
+    if (medium.trim().isEmpty) {
+      throw Exception('Medium is required');
+    }
+
     try {
-      print('Creating Batch for courseId: $courseId');
+      final result = await _apiService.adminCreateBatch(
+        _token!,
+        courseId,
+        batchName.trim(),
+        medium.trim(),
+        startDate,
+        endDate,
+      );
 
-      // Call API to create the module
-      await _apiService.Admincreatebatch(_token!, courseId, batchName);
-
-      print('Batch creation successful. Fetching updated modules...');
-
-      // Fetch updated modules after creation
-      await AdminfetchBatchForCourseProvider(courseId);
-
-      print('Batch created successfully.');
+      // Update the local state with the new batch
+      final currentBatches = courseBatches[courseId] ?? [];
+      courseBatches[courseId] = [...currentBatches, result];
+      notifyListeners();
     } catch (e) {
-      print('Error creating Batch: $e');
-      throw Exception('Failed to create Batch');
+      print('Error in AdminCreateBatchProvider: $e');
+      rethrow;
     }
   }
 
@@ -483,22 +505,39 @@ class AdminAuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> AdminUpdatebatchprovider(
-      int courseId, int batchId, String batchName) async {
-    if (_token == null) throw Exception('Token is missing');
-
-    try {
-      await _apiService.AdminupdateBatchAPI(
-          _token!, courseId, batchId, batchName);
-      await AdminfetchBatchForCourseProvider(
-          courseId); // Refresh the course list after update
-    } catch (e) {
-      print('Error updating batch: $e');
-      throw Exception('Failed to update batch');
-    }
+ Future<void> AdminUpdatebatchprovider(
+  int courseId,
+  int batchId,
+  String batchName,
+  String medium,
+  DateTime startDate,
+  DateTime endDate,
+) async {
+  if (_token == null) throw Exception('Token is missing');
+  try {
+    await _apiService.AdminupdateBatchAPI(
+      _token!,
+      courseId,
+      batchId,
+      batchName,
+      medium,
+      startDate,
+      endDate,
+    );
+    await AdminfetchBatchForCourseProvider(courseId);
+  } catch (e) {
+    print('Error updating batch: $e');
+    throw Exception('Failed to update batch');
   }
+}
 
-  Future<void> AdmindeleteBatchprovider(int courseId, int batchId) async {
+  Future<void> AdmindeleteBatchprovider(
+    int courseId,
+    int batchId,
+    String medium,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
     if (_token == null) throw Exception('Token is missing');
     try {
       final result =
@@ -1129,7 +1168,6 @@ class AdminAuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  
   Future<void> AdminfetchallteachersBatchProvider(
       int courseId, int batchId) async {
     if (_token == null) throw Exception('Token is missing');
@@ -1149,6 +1187,56 @@ class AdminAuthProvider with ChangeNotifier {
     } catch (e) {
       print('Error fetching teachers: $e');
       rethrow;
+    }
+  }
+
+  Future<void> sendResetEmail(String email, BuildContext context) async {
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      bool success = await _apiService.sendResetEmail(email);
+      if (success) {
+        Navigator.pop(context); // Close the email input dialog
+        ForgotPasswordHandler.showOtpPopup(
+            context, email); // Open the OTP dialog
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Resets password and navigates to login page
+  Future<void> resetPassword(String email, String otp, String newPassword,
+      BuildContext context) async {
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      bool success = await _apiService.resetPassword(email, otp, newPassword);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Password Reset Successfully!')),
+        );
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => AdminLoginScreen()),
+          (route) => false, // Clear navigation stack
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
   }
 }

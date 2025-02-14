@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Admincoursemodel {
   final int courseId;
   final String name;
@@ -83,17 +85,37 @@ class AdminLessonmodel {
 class AdminCourseBatch {
   final int batchId;
   final String batchName;
+  final String? medium; // Made nullable
+  final DateTime? startTime; // Made nullable
+  final DateTime? endTime; // Made nullable
 
   AdminCourseBatch({
     required this.batchId,
     required this.batchName,
+    this.medium,
+    this.startTime,
+    this.endTime,
   });
 
   factory AdminCourseBatch.fromJson(Map<String, dynamic> json) {
     return AdminCourseBatch(
-      batchId: json['batchId'],
-      batchName: json['batchName'],
+      batchId: json['batchId'] ?? 0,
+      batchName: json['batchName'] ?? '',
+      medium: json['medium'], // Allow null
+      startTime:
+          json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
+      endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'batchId': batchId,
+      'batchName': batchName,
+      'medium': medium,
+      'startTime': startTime?.toIso8601String(),
+      'endTime': endTime?.toIso8601String(),
+    };
   }
 }
 
@@ -103,6 +125,7 @@ class AdminAllusersmodel {
   final String phoneNumber;
   final String role;
   final int userId;
+  final String? registrationId;
 
   AdminAllusersmodel({
     required this.name,
@@ -110,6 +133,8 @@ class AdminAllusersmodel {
     required this.phoneNumber,
     required this.role,
     required this.userId,
+    required this.registrationId
+    
   });
 
   factory AdminAllusersmodel.fromJson(Map<String, dynamic> json) {
@@ -119,6 +144,7 @@ class AdminAllusersmodel {
       phoneNumber: json['phoneNumber'],
       role: json['role'],
       userId: json['userId'],
+      registrationId: json['registrationId']
     );
   }
 }

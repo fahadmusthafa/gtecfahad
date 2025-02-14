@@ -576,34 +576,40 @@ class _LiveSessionManagementState extends State<LiveSessionManagement> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  if (_formKey.currentState!.validate() && _selectedDateTime != null) {
-                    try {
-                      await context.read<AdminAuthProvider>().AdmincreateLivelinkprovider(
-                            widget.batchId,
-                            _liveLinkController.text,
-                            _selectedDateTime!,
-                          );
-                      _refreshLiveData();
-                      _liveLinkController.clear();
-                      setState(() {
-                        _selectedDateTime = null;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Live session created successfully'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error creating live session'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
+  if (_formKey.currentState!.validate() && _selectedDateTime != null) {
+    try {
+      // Ensure IST conversion
+      DateTime istDateTime = _selectedDateTime!.toLocal();  
+
+      await context.read<AdminAuthProvider>().AdmincreateLivelinkprovider(
+        widget.batchId,
+        _liveLinkController.text,
+        istDateTime, // Send IST time
+      );
+
+      _refreshLiveData();
+      _liveLinkController.clear();
+      setState(() {
+        _selectedDateTime = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Live session created successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creating live session'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+},
+
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryBlue,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -681,8 +687,8 @@ class _LiveSessionManagementState extends State<LiveSessionManagement> {
           _buildDetailItem(
             icon: Icons.access_time,
             title: 'Start Time',
-            content: DateFormat('MMM dd, yyyy HH:mm')
-                .format(liveLink.liveStartTime.toLocal()),
+            content: DateFormat('MMM dd, yyyy hh:mm a')
+                .format(liveLink.liveStartTime),
           ),
         ],
       ),
