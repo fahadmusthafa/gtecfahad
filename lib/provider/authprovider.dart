@@ -505,31 +505,31 @@ class AdminAuthProvider with ChangeNotifier {
     }
   }
 
- Future<void> AdminUpdatebatchprovider(
-  int courseId,
-  int batchId,
-  String batchName,
-  String medium,
-  DateTime startDate,
-  DateTime endDate,
-) async {
-  if (_token == null) throw Exception('Token is missing');
-  try {
-    await _apiService.AdminupdateBatchAPI(
-      _token!,
-      courseId,
-      batchId,
-      batchName,
-      medium,
-      startDate,
-      endDate,
-    );
-    await AdminfetchBatchForCourseProvider(courseId);
-  } catch (e) {
-    print('Error updating batch: $e');
-    throw Exception('Failed to update batch');
+  Future<void> AdminUpdatebatchprovider(
+    int courseId,
+    int batchId,
+    String batchName,
+    String medium,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    if (_token == null) throw Exception('Token is missing');
+    try {
+      await _apiService.AdminupdateBatchAPI(
+        _token!,
+        courseId,
+        batchId,
+        batchName,
+        medium,
+        startDate,
+        endDate,
+      );
+      await AdminfetchBatchForCourseProvider(courseId);
+    } catch (e) {
+      print('Error updating batch: $e');
+      throw Exception('Failed to update batch');
+    }
   }
-}
 
   Future<void> AdmindeleteBatchprovider(
     int courseId,
@@ -833,6 +833,7 @@ class AdminAuthProvider with ChangeNotifier {
             (assignment) => assignment.assignmentId == assignmentId);
         notifyListeners();
       }
+      await fetchAssignmentForModuleProvider(courseId, moduleId);
     } catch (e) {
       print('Error deleting Assignment: $e');
       throw Exception('Failed to delete Assignment');
@@ -866,22 +867,33 @@ class AdminAuthProvider with ChangeNotifier {
 
   Future<void> AdminfetchallusersBatchProvider(
       int courseId, int batchId) async {
-    if (_token == null) throw Exception('Token is missing');
+    if (_token == null) {
+      _error = 'Token is missing';
+      notifyListeners();
+      throw Exception(_error);
+    }
 
     try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
       final response = await _apiService.AdminfetchUsersBatchAPI(
         _token!,
         courseId,
         batchId,
       );
 
-      _batchData = response as BatchStudentModel?;
+      _batchData = response;
+      _isLoading = false;
       print('Fetched batch data: $_batchData');
       print('Number of students: ${_batchData?.students.length}');
-
       notifyListeners();
     } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
       print('Error fetching users: $e');
+      notifyListeners();
       rethrow;
     }
   }
@@ -1236,6 +1248,26 @@ class AdminAuthProvider with ChangeNotifier {
       );
     } finally {
       isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  UserResponse? _user;
+
+  UserResponse? get user => _user;
+
+  Future<void> fetchUserDetails(int userId) async {
+    if (_token == null) {
+      print('Token is missing');
+      return;
+    }
+    try {
+      final response = await _apiService.fetchUserDetails(_token!, userId);
+      _user = response;
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching user details: $e');
+      _user = null;
       notifyListeners();
     }
   }

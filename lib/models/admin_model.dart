@@ -127,25 +127,22 @@ class AdminAllusersmodel {
   final int userId;
   final String? registrationId;
 
-  AdminAllusersmodel({
-    required this.name,
-    required this.email,
-    required this.phoneNumber,
-    required this.role,
-    required this.userId,
-    required this.registrationId
-    
-  });
+  AdminAllusersmodel(
+      {required this.name,
+      required this.email,
+      required this.phoneNumber,
+      required this.role,
+      required this.userId,
+      required this.registrationId});
 
   factory AdminAllusersmodel.fromJson(Map<String, dynamic> json) {
     return AdminAllusersmodel(
-      name: json['name'],
-      email: json['email'],
-      phoneNumber: json['phoneNumber'],
-      role: json['role'],
-      userId: json['userId'],
-      registrationId: json['registrationId']
-    );
+        name: json['name'],
+        email: json['email'],
+        phoneNumber: json['phoneNumber'],
+        role: json['role'],
+        userId: json['userId'],
+        registrationId: json['registrationId']);
   }
 }
 
@@ -668,5 +665,178 @@ class Teacher {
       name: json['name'],
       email: json['email'],
     );
+  }
+}
+
+class UserResponse {
+  final String message;
+  final User user;
+
+  UserResponse({required this.message, required this.user});
+
+  factory UserResponse.fromJson(Map<String, dynamic> json) {
+    return UserResponse(
+      message: json['message'],
+      user: User.fromJson(json['user']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'message': message,
+      'user': user.toJson(),
+    };
+  }
+}
+
+class User {
+  final int userId;
+  final String? registrationId;
+  final String name;
+  final String email;
+  final String role;
+  final List<Course> courses;
+
+  User({
+    required this.userId,
+    this.registrationId,
+    required this.name,
+    required this.email,
+    required this.role,
+    required this.courses,
+  });
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      userId: json['userId'],
+      registrationId: json['registrationId'],
+      name: json['name'],
+      email: json['email'],
+      role: json['role'],
+      courses: (json['courses'] as List)
+          .map((course) => Course.fromJson(course))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'registrationId': registrationId,
+      'name': name,
+      'email': email,
+      'role': role,
+      'courses': courses.map((course) => course.toJson()).toList(),
+    };
+  }
+
+  int get totalSubmittedAssignments {
+    return courses.fold(0,
+        (sum, course) => sum + (course.assignments?.submittedAssignments ?? 0));
+  }
+
+  int get totalSubmittedQuizzes {
+    return courses.fold(
+        0, (sum, course) => sum + (course.quizzes?.submittedQuizzes ?? 0));
+  }
+}
+
+class Course {
+  final int batchId;
+  final String? batchName;
+  final int courseId;
+  final String courseName;
+  final Assignments? assignments;
+  final Quizzes? quizzes;
+
+  Course({
+    required this.batchId,
+    this.batchName,
+    required this.courseId,
+    required this.courseName,
+    this.assignments,
+    this.quizzes,
+  });
+
+  factory Course.fromJson(Map<String, dynamic> json) {
+    return Course(
+      batchId: json['batchId'],
+      batchName: json['batchName'],
+      courseId: json['courseId'],
+      courseName: json['courseName'],
+      assignments: json.containsKey('assignments')
+          ? Assignments.fromJson(json['assignments'])
+          : null,
+      quizzes: json.containsKey('quizzes')
+          ? Quizzes.fromJson(json['quizzes'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'batchId': batchId,
+      'batchName': batchName,
+      'courseId': courseId,
+      'courseName': courseName,
+      if (assignments != null) 'assignments': assignments!.toJson(),
+      if (quizzes != null) 'quizzes': quizzes!.toJson(),
+    };
+  }
+}
+
+class Assignments {
+  final int totalAssignments;
+  final int submittedAssignments;
+  final int pendingAssignments;
+
+  Assignments({
+    required this.totalAssignments,
+    required this.submittedAssignments,
+    required this.pendingAssignments,
+  });
+
+  factory Assignments.fromJson(Map<String, dynamic> json) {
+    return Assignments(
+      totalAssignments: json['totalAssignments'],
+      submittedAssignments: json['submittedAssignments'],
+      pendingAssignments: json['pendingAssignments'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalAssignments': totalAssignments,
+      'submittedAssignments': submittedAssignments,
+      'pendingAssignments': pendingAssignments,
+    };
+  }
+}
+
+class Quizzes {
+  final int totalQuizzes;
+  final int submittedQuizzes;
+  final int pendingQuizzes;
+
+  Quizzes({
+    required this.totalQuizzes,
+    required this.submittedQuizzes,
+    required this.pendingQuizzes,
+  });
+
+  factory Quizzes.fromJson(Map<String, dynamic> json) {
+    return Quizzes(
+      totalQuizzes: json['totalQuizzes'],
+      submittedQuizzes: json['submittedQuizzes'],
+      pendingQuizzes: json['pendingQuizzes'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalQuizzes': totalQuizzes,
+      'submittedQuizzes': submittedQuizzes,
+      'pendingQuizzes': pendingQuizzes,
+    };
   }
 }

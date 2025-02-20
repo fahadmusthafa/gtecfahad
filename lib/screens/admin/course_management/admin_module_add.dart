@@ -28,8 +28,15 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
   bool isExpanded = false;
   AdminModulemodel? selectedModule;
   bool isLoading = false;
+  AdminLessonmodel? selectedLesson;
   bool isFabMenuOpen = false;
   late AnimationController _animationController;
+  int? selectedQuizId;
+  int? selectedAssignmentId;
+
+  final primaryBlue = Colors.blue;
+  final mediumBlue = Colors.blue.shade700;
+  final lightBlue = Colors.blue.shade50;
 
   @override
   void dispose() {
@@ -51,11 +58,27 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
   @override
   void initState() {
     super.initState();
-    _loadModules();
+
+    // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
+
+    // Load both modules and batch data
+    _loadInitialData();
+  }
+
+// New method to handle all initial data loading
+  Future<void> _loadInitialData() async {
+    // Load modules
+    await _loadModules();
+
+    // Load batch data
+    final adminProvider =
+        Provider.of<AdminAuthProvider>(context, listen: false);
+    await adminProvider.AdminfetchallusersBatchProvider(
+        widget.courseId, widget.batchId);
   }
 
   Future<void> _loadModules() async {
@@ -749,9 +772,38 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
 
   Widget _buildModuleDropdown(List<AdminModulemodel> modules) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 2,
+            blurRadius: 15,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Icon(Icons.menu_book, size: 24, color: primaryBlue),
+              const SizedBox(width: 12),
+              Text(
+                'SELECT MODULE',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           InkWell(
             onTap: () async {
               setState(() {
@@ -761,74 +813,78 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                 await _loadLessonsAndAssignmentsquiz();
               }
             },
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.blue.shade50.withOpacity(0.5),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Select Module',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Select Module',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[600],
                       ),
                     ),
+                  ),
+                  if (modules.isNotEmpty)
                     Icon(
                       isExpanded
                           ? Icons.keyboard_arrow_up
                           : Icons.keyboard_arrow_down,
                       color: Colors.blue,
                     ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),
-          if (isExpanded) ...[
-            const SizedBox(height: 8),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const ClampingScrollPhysics(),
-              itemCount: modules.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final module = modules[index];
-                return Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                      color: selectedModule?.moduleId == module.moduleId
-                          ? Colors.blue.shade300
-                          : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                  child: InkWell(
+          if (isExpanded && modules.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
+                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const ClampingScrollPhysics(),
+                itemCount: modules.length,
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  color: Colors.grey.withOpacity(0.2),
+                ),
+                itemBuilder: (context, index) {
+                  final module = modules[index];
+                  final isSelected =
+                      selectedModule?.moduleId == module.moduleId;
+
+                  return InkWell(
                     onTap: () {
                       setState(() {
                         selectedModule = module;
                         isExpanded = false;
                       });
-                      Provider.of<AdminAuthProvider>(context, listen: false)
-                          .clearModuleData();
+                      Provider.of<AdminAuthProvider>(context, listen: false);
                       _loadLessonsAndAssignmentsquiz();
                     },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      color: isSelected
+                          ? Colors.blue.shade50.withOpacity(0.3)
+                          : null,
                       child: Row(
                         children: [
                           Container(
                             width: 60,
                             height: 60,
                             decoration: BoxDecoration(
-                              color: selectedModule?.moduleId == module.moduleId
+                              color: isSelected
                                   ? Colors.blue.shade100
                                   : Colors.blue.shade50,
                               shape: BoxShape.circle,
@@ -838,8 +894,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                                 (index + 1).toString(),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: selectedModule?.moduleId ==
-                                          module.moduleId
+                                  color: isSelected
                                       ? Colors.blue.shade900
                                       : Colors.blue.shade700,
                                   fontSize: 20,
@@ -857,28 +912,27 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: selectedModule?.moduleId ==
-                                            module.moduleId
+                                    color: isSelected
                                         ? Colors.blue.shade900
                                         : Colors.black87,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  module.content.isNotEmpty
-                                      ? module.content
-                                      : 'No description available',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade700,
+                                if (module.content.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    module.content,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[700],
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           ),
-                          if (selectedModule?.moduleId == module.moduleId)
+                          if (isSelected)
                             Icon(
                               Icons.check_circle,
                               color: Colors.blue.shade700,
@@ -887,9 +941,9 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                         ],
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ],
         ],
@@ -898,17 +952,24 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
   }
 
   Widget _buildSelectedModuleCard(AdminModulemodel module) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.blue.shade200, width: 1),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 2,
+            blurRadius: 15,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      margin: EdgeInsets.symmetric(horizontal: 0),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Column(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -919,7 +980,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                     color: Colors.blue.shade900,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   module.content.isNotEmpty
                       ? module.content
@@ -931,18 +992,22 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
                 ),
               ],
             ),
-            Spacer(),
-            IconButton(
-              icon: Icon(Icons.edit_note,
-                  color: const Color.fromARGB(255, 0, 0, 0)),
-              onPressed: () => _showEditModuleDialog(context, module),
-            ),
-            IconButton(
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.edit_note,
+                    color: const Color.fromARGB(255, 0, 0, 0)),
+                onPressed: () => _showEditModuleDialog(context, module),
+              ),
+              IconButton(
                 icon: Icon(Icons.delete_sweep_outlined,
                     color: const Color.fromARGB(255, 0, 0, 0)),
-                onPressed: () => _handleDeleteModule(module)),
-          ],
-        ),
+                onPressed: () => _handleDeleteModule(module),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -986,7 +1051,10 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
   }
 
   Widget _buildLessonsAndAssignmentsquizView() {
-    if (selectedModule == null) return SizedBox.shrink();
+    if (selectedModule == null) {
+      print('UI: No module selected');
+      return const SizedBox.shrink();
+    }
 
     return Consumer<AdminAuthProvider>(
       builder: (context, provider, child) {
@@ -995,104 +1063,129 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
             provider.getAssignmentsForModule(selectedModule!.moduleId);
         final quiz = provider.getQuizForModule(selectedModule!.moduleId);
 
-        // Print the data to the terminal
-        print('Lessons: $lessons');
-        print('Assignments: $assignments');
-        print('Quiz: $quiz');
+        print('UI: Building section for module ${selectedModule!.moduleId}');
+        print(
+            'UI: Found ${lessons.length} lessons, ${assignments.length} assignments, and ${quiz.length} quizzes');
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(
-                  color: Colors.lightBlue, // Set your desired border color
-                  width: 1, // Set your desired border width
-                ),
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.08),
+                spreadRadius: 2,
+                blurRadius: 15,
+                offset: const Offset(0, 3),
               ),
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'LESSONS',
+            ],
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Lessons Section
+              Row(
+                children: [
+                  Icon(Icons.library_books, size: 24, color: primaryBlue),
+                  const SizedBox(width: 12),
+                  Text(
+                    'LESSONS',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (lessons.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'No lessons available for this module',
                       style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.grey[600],
                       ),
                     ),
-                    SizedBox(height: 16),
-                    Divider(),
-                    SizedBox(height: 16),
-                    _buildLessonsList(lessons),
-                  ],
-                ),
+                  ),
+                )
+              else
+                _buildLessonsList(lessons),
+
+              // Assignments Section
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Icon(Icons.assignment, size: 24, color: primaryBlue),
+                  const SizedBox(width: 12),
+                  Text(
+                    'ASSIGNMENTS',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 32),
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(
-                  color: Colors.green.shade100, // Set your desired border color
-                  width: 1, // Set your desired border width
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ASSIGNMENTS',
+              const SizedBox(height: 16),
+              if (assignments.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'No assignments available for this module',
                       style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.grey[600],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Divider(),
-                    const SizedBox(height: 16),
-                    _buildAssignmentsList(assignments),
-                  ],
-                ),
+                  ),
+                )
+              else
+                _buildAssignmentsList(assignments),
+
+              // Quizzes Section
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Icon(Icons.quiz, size: 24, color: primaryBlue),
+                  const SizedBox(width: 12),
+                  Text(
+                    'QUIZZES',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            SizedBox(
-              height: 32,
-            ),
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(
-                  color:
-                      Colors.orange.shade100, // Set your desired border color
-                  width: 1, // Set your desired border width
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Quizes',
+              const SizedBox(height: 16),
+              if (quiz.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'No quizzes available for this module',
                       style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.grey[600],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Divider(),
-                    const SizedBox(height: 16),
-                    _buildQuizList(quiz),
-                  ],
-                ),
-              ),
-            ),
-          ],
+                  ),
+                )
+              else
+                _buildQuizList(quiz),
+            ],
+          ),
         );
       },
     );
@@ -1120,131 +1213,174 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
       itemCount: quiz.length,
       itemBuilder: (context, index) {
         final quizItem = quiz[index];
-        return Card(
-          margin: EdgeInsets.only(bottom: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.orange.shade100),
-          ),
-          child: ListTile(
-            contentPadding: EdgeInsets.all(16),
-            leading: CircleAvatar(
-              backgroundColor: Colors.orange.shade100,
-              child: Icon(Icons.quiz, color: Colors.orange),
-            ),
-            title: Text(
-              quizItem.name,
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(quizItem.description),
-                SizedBox(height: 4),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // IconButton(
-                //   icon: Icon(Icons.edit_note,
-                //       color: const Color.fromARGB(255, 0, 0, 0)),
-                //   onPressed: () {
-                //    _showEditQuizDialog(context, quizItem);
-                //   },
-                // ),
-                IconButton(
-                  icon: const Icon(Icons.delete_sweep_outlined,
-                      color: Colors.black),
-                  onPressed: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: const Text('Delete Quiz'),
-                          content: const Text(
-                              'Are you sure you want to delete this quiz?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-
-                    if (confirm == true) {
-                      try {
-                        final provider = Provider.of<AdminAuthProvider>(context,
-                            listen: false);
-                        await provider.deleteQuizProvider(quizItem.courseId,
-                            quizItem.moduleId, quizItem.quizId);
-
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Quiz deleted successfully!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      } catch (error) {
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Failed to delete quiz: $error'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                selectedQuizId =
+                    selectedQuizId == quizItem.quizId ? null : quizItem.quizId;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: selectedQuizId == quizItem.quizId
+                    ? lightBlue.withOpacity(0.3)
+                    : Colors.white,
+                border: Border.all(
+                  color: selectedQuizId == quizItem.quizId
+                      ? primaryBlue.withOpacity(0.3)
+                      : Colors.grey.withOpacity(0.2),
                 ),
-                SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => QuizSubmissionPage(
-                          quizId: quizItem.quizId,
-                          title: quizItem.name,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          quizItem.name,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: selectedQuizId == quizItem.quizId
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: selectedQuizId == quizItem.quizId
+                                ? primaryBlue
+                                : Colors.black87,
+                          ),
                         ),
                       ),
-                    );
-                  },
-                  child: Text(
-                    "View Submissions",
-                    style: TextStyle(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Active',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (selectedQuizId == quizItem.quizId) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      quizItem.description,
+                      style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w300,
-                        color: Colors.orange.shade500),
-                  ),
-                  style: ButtonStyle(
-                    padding: MaterialStateProperty.all(
-                        EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-                    side: MaterialStateProperty.all(
-                        BorderSide(color: Colors.orange.shade100, width: 1)),
-                    shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    )),
-                    backgroundColor:
-                        MaterialStateProperty.all(Colors.transparent),
-                    elevation: MaterialStateProperty.all(0),
-                  ),
-                ),
-              ],
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.delete_sweep_outlined,
+                              color: Colors.black),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: const Text('Delete Quiz'),
+                                  content: const Text(
+                                      'Are you sure you want to delete this quiz?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (confirm == true) {
+                              try {
+                                final provider = Provider.of<AdminAuthProvider>(
+                                    context,
+                                    listen: false);
+                                await provider.deleteQuizProvider(
+                                    quizItem.courseId,
+                                    quizItem.moduleId,
+                                    quizItem.quizId);
+
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Quiz deleted successfully!'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } catch (error) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content:
+                                        Text('Failed to delete quiz: $error'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => QuizSubmissionPage(
+                                  quizId: quizItem.quizId,
+                                  title: quizItem.name,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: Icon(Icons.visibility, size: 20),
+                          label: Text('View Submissions'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: primaryBlue,
+                            side: BorderSide(color: primaryBlue),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         );
       },
     );
   }
-
 // Show Edit Dialog for Quiz
   // void _showEditQuizDialog(BuildContext context, AdminQuizModel quiz) {
   //   Navigator.push(
@@ -1264,6 +1400,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
     if (lessons.isEmpty) {
       return Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.menu_book, size: 48, color: Colors.grey),
             SizedBox(height: 8),
@@ -1282,86 +1419,133 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
       itemCount: lessons.length,
       itemBuilder: (context, index) {
         final lesson = lessons[index];
-        return Card(
-          margin: EdgeInsets.only(bottom: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.blue.shade100),
-          ),
-          child: ListTile(
-            contentPadding: EdgeInsets.all(16),
-            leading: CircleAvatar(
-              backgroundColor: Colors.blue.shade100,
-              child: Text('${index + 1}'),
-            ),
-            title: Text(
-              lesson.title,
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(lesson.content),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.edit_note),
-                  onPressed: () => _showEditLessonDialog(context, lesson),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.delete_sweep_outlined,
-                    color: Colors.black,
-                  ),
-                  onPressed: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: const Text('Delete Lesson'),
-                          content: const Text(
-                              'Are you sure you want to delete this lesson?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
+        final isSelected = selectedLesson?.lessonId == lesson.lessonId;
 
-                    if (confirm == true) {
-                      try {
-                        await Provider.of<AdminAuthProvider>(context,
-                                listen: false)
-                            .admindeletelessonprovider(
-                          widget.courseId,
-                          widget.batchId,
-                          selectedModule!.moduleId,
-                          lesson.lessonId,
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Lesson deleted successfully!')),
-                        );
-                      } catch (error) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text('Failed to delete lesson: $error')),
-                        );
-                      }
-                    }
-                  },
+        return Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                selectedLesson = isSelected ? null : lesson;
+              });
+            },
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: isSelected ? lightBlue.withOpacity(0.3) : Colors.white,
+                border: Border.all(
+                  color: isSelected
+                      ? primaryBlue.withOpacity(0.3)
+                      : Colors.grey.withOpacity(0.2),
                 ),
-              ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          lesson.title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected ? primaryBlue : Colors.black87,
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              Icons.edit_note,
+                              color: isSelected ? primaryBlue : Colors.grey,
+                            ),
+                            onPressed: () =>
+                                _showEditLessonDialog(context, lesson),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.delete_sweep_outlined,
+                              color: isSelected ? primaryBlue : Colors.grey,
+                            ),
+                            onPressed: () =>
+                                _showDeleteConfirmation(context, lesson),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (isSelected) ...[
+                    SizedBox(height: 12),
+                    Text(
+                      lesson.content,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  Future<void> _showDeleteConfirmation(
+      BuildContext context, AdminLessonmodel lesson) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Delete Lesson'),
+          content: Text('Are you sure you want to delete this lesson?'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      try {
+        await Provider.of<AdminAuthProvider>(context, listen: false)
+            .admindeletelessonprovider(
+          widget.courseId,
+          widget.batchId,
+          selectedModule!.moduleId,
+          lesson.lessonId,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lesson deleted successfully!')),
+        );
+      } catch (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete lesson: $error')),
+        );
+      }
+    }
   }
 
   Widget _buildAssignmentsList(List<AssignmentModel> assignments) {
@@ -1386,152 +1570,238 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
       itemCount: assignments.length,
       itemBuilder: (context, index) {
         final assignment = assignments[index];
-        return Card(
-          margin: EdgeInsets.only(bottom: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.green.shade100),
-          ),
-          child: ListTile(
-            contentPadding: EdgeInsets.all(16),
-            leading: CircleAvatar(
-              backgroundColor: Colors.green.shade100,
-              child: Icon(Icons.assignment, color: Colors.green),
-            ),
-            title: Text(
-              assignment.title,
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(assignment.description),
-                SizedBox(height: 4),
-                Text(
-                  'Due: ${DateFormat('MMM dd, yyyy').format(assignment.dueDate)}',
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.w500,
-                  ),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                selectedAssignmentId =
+                    selectedAssignmentId == assignment.assignmentId
+                        ? null
+                        : assignment.assignmentId;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: selectedAssignmentId == assignment.assignmentId
+                    ? lightBlue.withOpacity(0.3)
+                    : Colors.white,
+                border: Border.all(
+                  color: selectedAssignmentId == assignment.assignmentId
+                      ? primaryBlue.withOpacity(0.3)
+                      : Colors.grey.withOpacity(0.2),
                 ),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.edit_note,
-                      color: const Color.fromARGB(255, 0, 0, 0)),
-                  onPressed: () =>
-                      _showEditAssignmentDialog(context, assignment),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_sweep_outlined,
-                      color: Colors.black),
-                  onPressed: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: const Text('Delete Assignment'),
-                          content: const Text(
-                              'Are you sure you want to delete this assignment?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-
-                    if (confirm == true) {
-                      try {
-                        setState(() {
-                          isLoading = true;
-                        });
-
-                        await Provider.of<AdminAuthProvider>(context,
-                                listen: false)
-                            .superadmindeleteassignmentprovider(
-                          assignment.assignmentId,
-                          widget.courseId,
-                          selectedModule!.moduleId,
-                        );
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Assignment deleted successfully!'),
-                            backgroundColor: Colors.green,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          assignment.title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight:
+                                selectedAssignmentId == assignment.assignmentId
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                            color:
+                                selectedAssignmentId == assignment.assignmentId
+                                    ? primaryBlue
+                                    : Colors.black87,
                           ),
-                        );
-
-                        await _buildLessonsAndAssignmentsquizView();
-                      } catch (error) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content:
-                                Text('Failed to delete assignment: $error'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      } finally {
-                        setState(() {
-                          isLoading = false;
-                        });
-                      }
-                    }
-                  },
-                ),
-                SizedBox(
-                  width: 10,
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SubmissionPage(
-                          assignmentId: assignment.assignmentId,
-                          title: assignment.title,
                         ),
                       ),
-                    );
-                  },
-                  child: Text(
-                    "View Submissions",
-                    style: TextStyle(
-                        fontSize: 14, // Reduced font size
-                        fontWeight: FontWeight.w300,
-                        color: Colors.green.shade500 // Slightly bolder text
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
+                        decoration: BoxDecoration(
+                          color: _getDueDateColor(assignment.dueDate)
+                              .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _formatDueDate(assignment.dueDate),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _getDueDateColor(assignment.dueDate),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  style: ButtonStyle(
-                    padding: MaterialStateProperty.all(EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10)), // Reduced padding for smaller button
-                    side: MaterialStateProperty.all(BorderSide(
-                        color: Colors.green.shade100,
-                        width: 1)), // Border with color
-                    shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8), // Rounded corners
-                    )),
-                    backgroundColor: MaterialStateProperty.all(
-                        Colors.transparent), // No fill color
-                    elevation: MaterialStateProperty.all(0), // No elevation
-                  ),
-                )
-              ],
+                  if (selectedAssignmentId == assignment.assignmentId) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      assignment.description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit_note,
+                              color: const Color.fromARGB(255, 0, 0, 0)),
+                          onPressed: () =>
+                              _showEditAssignmentDialog(context, assignment),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_sweep_outlined,
+                              color: Colors.black),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: const Text('Delete Assignment'),
+                                  content: const Text(
+                                      'Are you sure you want to delete this assignment?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (confirm == true) {
+                              try {
+                                setState(() {
+                                  isLoading = true;
+                                });
+
+                                await Provider.of<AdminAuthProvider>(context,
+                                        listen: false)
+                                    .superadmindeleteassignmentprovider(
+                                  assignment.assignmentId,
+                                  widget.courseId,
+                                  selectedModule!.moduleId,
+                                );
+
+                                // Update the assignments list in the state
+                                setState(() {
+                                  assignments.removeWhere((item) =>
+                                      item.assignmentId ==
+                                      assignment.assignmentId);
+                                });
+
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Assignment deleted successfully!'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+
+                                // Reset selected assignment if the deleted one was selected
+                                if (selectedAssignmentId ==
+                                    assignment.assignmentId) {
+                                  setState(() {
+                                    selectedAssignmentId = null;
+                                  });
+                                }
+                              } catch (error) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Failed to delete assignment: $error'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              } finally {
+                                setState(() {
+                                  isLoading = false;
+                                });
+                              }
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SubmissionPage(
+                                  assignmentId: assignment.assignmentId,
+                                  title: assignment.title,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: Icon(Icons.visibility, size: 20),
+                          label: Text('View Submissions'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: primaryBlue,
+                            side: BorderSide(color: primaryBlue),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  String _formatDueDate(DateTime dueDate) {
+    final now = DateTime.now();
+    final difference = dueDate.difference(now);
+
+    if (difference.inDays < 0) {
+      return 'Overdue';
+    } else if (difference.inDays == 0) {
+      return 'Due Today';
+    } else if (difference.inDays == 1) {
+      return 'Due Tomorrow';
+    } else if (difference.inDays < 7) {
+      return 'Due in ${difference.inDays} days';
+    } else {
+      return 'Due ${DateFormat('MMM d').format(dueDate)}';
+    }
+  }
+
+  Color _getDueDateColor(DateTime dueDate) {
+    final now = DateTime.now();
+    final difference = dueDate.difference(now);
+
+    if (difference.inDays < 0) {
+      return Colors.red;
+    } else if (difference.inDays < 3) {
+      return Colors.orange;
+    } else {
+      return Colors.green;
+    }
   }
 
   @override
@@ -1545,114 +1815,96 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Consumer<AdminAuthProvider>(
-              builder: (context, provider, child) {
-                final modules = provider.getModulesForCourse(widget.courseId);
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [lightBlue, Colors.white],
+          ),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left side remains the same
+                Expanded(
+                  flex: 2,
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Consumer<AdminAuthProvider>(
+                          builder: (context, provider, child) {
+                            final modules =
+                                provider.getModulesForCourse(widget.courseId);
 
-                if (provider.isLoading) {
-                  return Center(child: CircularProgressIndicator());
-                }
+                            if (provider.isLoading) {
+                              return Center(child: CircularProgressIndicator());
+                            }
 
-                return Column(
-                  children: [
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(
-                          color:
-                              Colors.lightBlue, // Set your desired border color
-                          width: 1, // Set your desired border width
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment
-                            .start, // Aligns content to the left
-                        children: [
-                          SizedBox(height: 16),
-                          Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 16.0), // Adjust horizontal padding
-                            child: Text(
-                              'MODULES',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                              textAlign: TextAlign
-                                  .left, // Ensures the text is left-aligned
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Divider(),
-                          Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Column(
+                            return Column(
                               children: [
-                                _buildModuleDropdown(modules),
-                                if (selectedModule != null)
-                                  _buildSelectedModuleCard(selectedModule!),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    if (selectedModule != null)
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(
-                            color: Colors
-                                .lightBlue, // Set your desired border color
-                            width: 1, // Set your desired border width
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment
-                              .start, // Aligns content to the left
-                          children: [
-                            SizedBox(height: 16),
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal:
-                                      16.0), // Adjust horizontal padding
-                              child: Text(
-                                'MODULE CONTENT',
-                                style: TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
+                                Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Column(
+                                    children: [
+                                      _buildModuleDropdown(modules),
+                                      const SizedBox(height: 10),
+                                      if (selectedModule != null)
+                                        _buildSelectedModuleCard(
+                                            selectedModule!),
+                                    ],
+                                  ),
                                 ),
-                                textAlign: TextAlign
-                                    .left, // Ensures the text is left-aligned
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Divider(),
-                            Padding(
-                              padding: EdgeInsets.all(16),
-                              child: _buildLessonsAndAssignmentsquizView(),
-                            ),
-                          ],
+                                SizedBox(height: 16),
+                                if (selectedModule != null)
+                                  Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child:
+                                        _buildLessonsAndAssignmentsquizView(),
+                                  ),
+                              ],
+                            );
+                          },
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Vertical Divider
+                // Container(
+                //   width: 1,
+                //   height: constraints.maxHeight,
+                //   color: Colors.grey.withOpacity(0.2),
+                // ),
+
+                Expanded(
+                  flex: 1,
+                  child: Consumer<AdminAuthProvider>(
+                    builder: (context, adminProvider, child) {
+                      return Container(
+                        height: constraints.maxHeight - 1,
+                        child: BatchStatusDisplay(
+                          error: adminProvider.error,
+                          isLoading: adminProvider.isLoading,
+                          batchData: adminProvider.batchData,
                         ),
-                      ),
-                  ],
-                );
-              },
-            )
-          ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Create Module Button (always visible)
           ScaleTransition(
             scale: CurvedAnimation(
               parent: _animationController,
@@ -1680,6 +1932,7 @@ class _AdminModuleAddScreenState extends State<AdminModuleAddScreen>
           ),
 
           if (selectedModule != null) ...[
+            // Your existing FAB items for Quiz, Assignment, and Lesson
             ScaleTransition(
               scale: CurvedAnimation(
                 parent: _animationController,
@@ -2190,5 +2443,354 @@ class _CreateAssignmentDialogState extends State<_CreateAssignmentDialog> {
         ),
       ],
     );
+  }
+}
+
+class BatchStatusDisplay extends StatelessWidget {
+  final String? error;
+  final bool isLoading;
+  final BatchStudentModel? batchData;
+
+  const BatchStatusDisplay({
+    Key? key,
+    required this.error,
+    required this.isLoading,
+    required this.batchData,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Loading batch details...',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (error != null) {
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.red[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.red[700],
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Unable to Load Data',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error!.startsWith('Exception:') ? error!.substring(10) : error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.red[900],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (batchData == null) {
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.blue.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'No Batch Data Available',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please check if the batch is assigned\nor try again later.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.blue[900],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return _buildStudentsSection(batchData!);
+  }
+
+  Widget _buildStudentsSection(BatchStudentModel batchData) {
+    final primaryBlue = Colors.blue;
+    final mediumBlue = Colors.blue.shade700;
+    final lightBlue = Colors.blue.shade50;
+
+    return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              spreadRadius: 2,
+              blurRadius: 15,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Course and Batch Header
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.school, size: 24, color: primaryBlue),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        batchData.courseName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.group, size: 20, color: primaryBlue),
+                    const SizedBox(width: 12),
+                    Text(
+                      batchData.batchName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Students Section Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.people, size: 24, color: primaryBlue),
+                  const SizedBox(width: 12),
+                  Text(
+                    'STUDENTS',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '${batchData.students.length} Students',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Students List
+          Expanded(
+              child: batchData.students.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.people_outline,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No students enrolled yet',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Students will appear here once enrolled',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: batchData.students.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final student = batchData.students[index];
+
+                        return Consumer<AdminAuthProvider>(
+                          builder: (context, userProvider, child) {
+                            final userData = userProvider.user;
+
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color:
+                                        Colors.blue.shade700.withOpacity(0.2)),
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: Colors.blue,
+                                    radius: 20,
+                                    child: Text(
+                                      student.name[0].toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          student.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          student.email,
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        if (userData != null)
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Submitted Assignments: ${userData.user.totalSubmittedAssignments}',
+                                                style: TextStyle(
+                                                  color: Colors.green[700],
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              Text(
+                                                'Submitted Quizzes: ${userData.user.totalSubmittedQuizzes}',
+                                                style: TextStyle(
+                                                  color: Colors.green[700],
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        else
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              userProvider.fetchUserDetails(
+                                                  student.studentId);
+                                            },
+                                            child: const Text('Load Details'),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      }))
+        ]));
   }
 }

@@ -1462,4 +1462,33 @@ Future<String> AdminpostLiveLink(
       throw Exception(jsonDecode(response.body)['message']);
     }
   }
+
+
+Future<UserResponse> fetchUserDetails(String token, int userId) async {
+  final url = Uri.parse('$baseUrl/admin/getDetails/$userId');
+
+  try {
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('Status Code: ${response.statusCode}');
+    print('Response Body:${response.body}');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      return UserResponse.fromJson(data);
+    } else {
+      throw Exception('Failed to fetch user details: ${response.body}');
+    }
+  } catch (e) {
+    print('Error in API call: $e');
+    rethrow;
+  }
+}
+
 }
